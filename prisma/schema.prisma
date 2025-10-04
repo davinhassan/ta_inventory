@@ -1,0 +1,101 @@
+// 1. Konfigurasi Koneksi Database
+datasource db {
+  provider = "mysql" // Disesuaikan dengan pilihan Anda
+  url      = env("DATABASE_URL")
+}
+
+// 2. Konfigurasi Prisma Client
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 3. Definisi Model (Hasil terjemahan Class Diagram kita)
+
+// Enum untuk Role Pengguna
+enum Role {
+  STAFF
+  MANAJER
+  PEMILIK
+}
+
+// Model untuk Pengguna
+model Pengguna {
+  id            Int             @id @default(autoincrement())
+  nama          String
+  email         String          @unique
+  password      String
+  role          Role            @default(STAFF)
+  purchaseOrders PurchaseOrder[]
+  transaksiStok TransaksiStok[]
+}
+
+// Model untuk Supplier
+model Supplier {
+  id           Int          @id @default(autoincrement())
+  namaSupplier String
+  alamat       String
+  telepon      String       @unique
+  sukuCadang   SukuCadang[]
+}
+
+// Model untuk Suku Cadang (inti dari inventaris)
+model SukuCadang {
+  id            Int             @id @default(autoincrement())
+  kodeBarang    String          @unique
+  namaBarang    String
+  stok          Int             @default(0)
+  hargaBeli     Float
+  supplier      Supplier        @relation(fields: [supplierId], references: [id])
+  supplierId    Int
+  detailPO      DetailPO[]
+  transaksiStok TransaksiStok[]
+}
+
+// Enum untuk Status Purchase Order
+enum StatusPO {
+  DRAFT
+  MENUNGGU_PERSETUJUAN
+  DISETUJUI
+  DITOLAK
+  SELESAI
+}
+
+// Model untuk Purchase Order (PO)
+model PurchaseOrder {
+  id           Int        @id @default(autoincrement())
+  tanggalPesan DateTime   @default(now())
+  status       StatusPO   @default(DRAFT)
+  dibuatOleh   Pengguna   @relation(fields: [dibuatOlehId], references: [id])
+  dibuatOlehId Int
+  items        DetailPO[]
+}
+
+// Model untuk DetailPO (Tabel penghubung antara PO dan SukuCadang)
+model DetailPO {
+  jumlah          Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrderId Int
+  sukuCadang      SukuCadang    @relation(fields: [sukuCadangId], references: [id])
+  sukuCadangId    Int
+
+  @@id([purchaseOrderId, sukuCadangId])
+}
+
+// Enum untuk Tipe Transaksi Stok
+enum TipeTransaksi {
+  MASUK
+  KELUAR
+}
+
+// Model untuk Transaksi Stok (Riwayat pergerakan barang)
+model TransaksiStok {
+  id            Int           @id @default(autoincrement())
+  tanggal       DateTime      @default(now())
+  tipe          TipeTransaksi
+  jumlah        Int
+  keterangan    String?
+  sukuCadang    SukuCadang    @relation(fields: [sukuCadangId], references: [id])
+  sukuCadangId  Int
+  dilakukanOleh Pengguna      @relation(fields: [dilakukanOlehId], references: [id])
+  dilakukanOlehId Int
+}
