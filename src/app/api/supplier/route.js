@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Mendefinisikan instruksi untuk metode GET
 export async function GET() {
+  console.log("DATABASE_URL YANG DIGUNAKAN:", process.env.DATABASE_URL);
   try {
-    // Instruksi: Ambil semua data dari model 'supplier'
-    const suppliers = await prisma.supplier.findMany();
+    const suppliers = await prisma.Supplier.findMany({
+      orderBy: {
+        namaSupplier: "asc",
+      },
+    });
 
-    // Instruksi: Kirimkan hasilnya sebagai respons JSON
     return NextResponse.json(suppliers);
   } catch (error) {
     console.error("Gagal mengambil data supplier:", error);

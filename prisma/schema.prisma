@@ -1,6 +1,6 @@
 // 1. Konfigurasi Koneksi Database
 datasource db {
-  provider = "mysql" // Disesuaikan dengan pilihan Anda
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
