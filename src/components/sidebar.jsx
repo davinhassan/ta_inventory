@@ -8,6 +8,7 @@ const menus = [
   { name: "Supplier", href: "/dashboard/supplier", icon: "🚚" },
   { name: "Stok Barang", href: "/dashboard/stok", icon: "📦" },
   { name: "Transaksi", href: "/dashboard/transaksi", icon: "💰" },
+  { name: "Pengguna", href: "/dashboard/pengguna", icon: "👤" },
 ];
 
 export default function Sidebar() {
