@@ -1,18 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // Tambah useRouter
 
 const menus = [
   { name: "Dashboard", href: "/dashboard", icon: "🏠" },
   { name: "Supplier", href: "/dashboard/supplier", icon: "🚚" },
   { name: "Stok Barang", href: "/dashboard/stok", icon: "📦" },
   { name: "Transaksi", href: "/dashboard/transaksi", icon: "💰" },
-  { name: "Pengguna", href: "/dashboard/pengguna", icon: "👤" },
+  { name: "Pengguna", href: "/dashboard/pengguna", icon: "👥" },
+  { name: "Laporan", href: "/dashboard/laporan", icon: "📈" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter(); // Inisialisasi router
+
+  // Fungsi Logout
+  const handleLogout = async () => {
+    if (!confirm("Yakin ingin keluar?")) return;
+
+    try {
+      // Panggil API Logout
+      await fetch("/api/logout", { method: "POST" });
+
+      // Redirect ke halaman login
+      router.push("/login");
+      router.refresh(); // Refresh agar middleware bekerja ulang
+    } catch (error) {
+      console.error("Gagal logout:", error);
+    }
+  };
 
   return (
     <aside className="w-64 bg-gray-900 text-white h-screen fixed left-0 top-0 border-r border-gray-800 hidden md:block">
@@ -42,7 +60,11 @@ export default function Sidebar() {
       </nav>
 
       <div className="absolute bottom-0 w-full p-4 border-t border-gray-800">
-        <button className="flex items-center w-full px-4 py-2 text-red-400 hover:bg-gray-800 rounded transition">
+        {/* Update Tombol Keluar dengan onClick */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center w-full px-4 py-2 text-red-400 hover:bg-gray-800 rounded transition"
+        >
           <span>🚪</span>
           <span className="ml-3 font-medium">Keluar</span>
         </button>
