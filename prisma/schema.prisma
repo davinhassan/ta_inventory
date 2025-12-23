@@ -14,7 +14,7 @@ generator client {
 // Enum untuk Role Pengguna
 enum Role {
   STAFF
-  MANAJER
+  ADMIN
   PEMILIK
 }
 
@@ -44,9 +44,11 @@ model SukuCadang {
   kodeBarang    String          @unique
   namaBarang    String
   stok          Int             @default(0)
-  hargaBeli     Float
+  hargaBeli     Int
   supplier      Supplier        @relation(fields: [supplierId], references: [id])
   supplierId    Int
+  maxStok      Int      @default(50)
+  hargaJual    Int
   detailPO      DetailPO[]
   transaksiStok TransaksiStok[]
 }

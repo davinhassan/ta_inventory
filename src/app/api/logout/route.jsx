@@ -1,9 +1,15 @@
+// src/app/api/logout/route.js
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export async function POST() {
-  // Hapus cookie bernama 'token'
-  cookies().delete("token");
+  // Buat respon sukses
+  const response = NextResponse.json({ message: "Logout Berhasil" });
 
-  return NextResponse.json({ message: "Berhasil logout" });
+  // Perintah ke browser: "Hapus cookie bernama 'token' SEKARANG JUGA!"
+  response.cookies.set("token", "", { 
+    expires: new Date(0), 
+    path: "/" 
+  });
+
+  return response;
 }

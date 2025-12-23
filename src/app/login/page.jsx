@@ -23,10 +23,17 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        router.push("/dashboard"); // Redirect ke dashboard
+    if (res.ok) {
+        // --- TAMBAHKAN INI ---
+        // Simpan Role user yang login agar bisa dibaca Sidebar
+        localStorage.setItem("userRole", data.role); 
+        localStorage.setItem("userName", data.nama || "User");
+        // ---------------------
+
+        router.push("/dashboard"); 
         router.refresh();
-      } else {
+      } 
+      else {
         setError(data.error || "Login gagal");
       }
     } catch (err) {

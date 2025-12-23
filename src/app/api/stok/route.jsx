@@ -8,6 +8,10 @@ export async function GET() {
       include: {
         supplier: true,
       },
+      // KITA HAPUS BAGIAN orderBy KARENA KOLOM createdAt BELUM ADA
+      // orderBy: {
+      //   createdAt: 'desc' 
+      // }
     });
     return NextResponse.json(sukuCadang);
   } catch (error) {
@@ -16,18 +20,29 @@ export async function GET() {
   }
 }
 
-// --- FUNGSI POST (DENGAN PERBAIKAN) ---
+// --- FUNGSI POST (SUDAH DITAMBAH HARGA JUAL) ---
 export async function POST(request) {
   try {
     const data = await request.json();
 
-    // Menggunakan Prisma untuk membuat record baru di tabel SukuCadang
+    // 1. Cek Max Stok (Default 50 jika kosong)
+    const maxStokValue = data.maxStok ? parseInt(data.maxStok) : 50;
+
+    // 2. Cek Harga Jual (Default 0 jika kosong)
+    const hargaJualValue = data.hargaJual ? parseFloat(data.hargaJual) : 0;
+
     const newSukuCadang = await prisma.sukuCadang.create({
       data: {
         kodeBarang: data.kodeBarang,
         namaBarang: data.namaBarang,
         hargaBeli: parseFloat(data.hargaBeli),
-        // CARA YANG BENAR UNTUK MENGHUBUNGKAN RELASI
+        
+        // --- BAGIAN BARU: SIMPAN HARGA JUAL ---
+        hargaJual: hargaJualValue,
+        // --------------------------------------
+
+        stok: 0,
+        maxStok: maxStokValue, 
         supplier: {
           connect: {
             id: parseInt(data.supplierId),
