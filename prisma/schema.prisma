@@ -20,13 +20,13 @@ enum Role {
 
 // Model untuk Pengguna
 model Pengguna {
-  id            Int             @id @default(autoincrement())
-  nama          String
-  email         String          @unique
-  password      String
-  role          Role            @default(STAFF)
+  id             Int             @id @default(autoincrement())
+  nama           String
+  email          String          @unique
+  password       String
+  role           Role            @default(STAFF)
   purchaseOrders PurchaseOrder[]
-  transaksiStok TransaksiStok[]
+  transaksiStok  TransaksiStok[]
 }
 
 // Model untuk Supplier
@@ -40,17 +40,17 @@ model Supplier {
 
 // Model untuk Suku Cadang (inti dari inventaris)
 model SukuCadang {
-  id            Int             @id @default(autoincrement())
-  kodeBarang    String          @unique
-  namaBarang    String
-  stok          Int             @default(0)
-  hargaBeli     Int
-  supplier      Supplier        @relation(fields: [supplierId], references: [id])
-  supplierId    Int
-  maxStok      Int      @default(50)
-  hargaJual    Int
-  detailPO      DetailPO[]
-  transaksiStok TransaksiStok[]
+  id         Int             @id @default(autoincrement())
+  kodeBarang String          @unique
+  namaBarang String
+  stok       Int
+  maxStok    Int             @default(50) // Pastikan ini ada
+  hargaBeli  Float // Tipe data Float agar support desimal
+  hargaJual  Float           @default(0) // <--- TAMBAHKAN INI
+  supplierId Int?
+  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
+  transaksi  TransaksiStok[]
+  detailPOs  DetailPO[]
 }
 
 // Enum untuk Status Purchase Order
@@ -91,13 +91,13 @@ enum TipeTransaksi {
 
 // Model untuk Transaksi Stok (Riwayat pergerakan barang)
 model TransaksiStok {
-  id            Int           @id @default(autoincrement())
-  tanggal       DateTime      @default(now())
-  tipe          TipeTransaksi
-  jumlah        Int
-  keterangan    String?
-  sukuCadang    SukuCadang    @relation(fields: [sukuCadangId], references: [id])
-  sukuCadangId  Int
-  dilakukanOleh Pengguna      @relation(fields: [dilakukanOlehId], references: [id])
+  id              Int           @id @default(autoincrement())
+  tanggal         DateTime      @default(now())
+  tipe            TipeTransaksi
+  jumlah          Int
+  keterangan      String?
+  sukuCadang      SukuCadang    @relation(fields: [sukuCadangId], references: [id])
+  sukuCadangId    Int
+  dilakukanOleh   Pengguna      @relation(fields: [dilakukanOlehId], references: [id])
   dilakukanOlehId Int
 }
