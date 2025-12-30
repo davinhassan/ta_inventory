@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react"; // 1. Kita panggil "Tukang Login" resmi (NextAuth)
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,30 +16,30 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      // 2. LOGIKA BARU:
+      // Jangan pakai fetch("/api/login") lagi karena file itu sudah dihapus.
+      // Pakai signIn() -> Ini otomatis nyambung ke /api/auth/[...nextauth]
+      const result = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false, // Kita atur redirect sendiri biar lebih mulus
       });
 
-      const data = await res.json();
+      if (result?.error) {
+        // Jika login gagal (Password salah / Email ga ada)
+        setError("Email atau Password salah!");
+        setLoading(false);
+      } else {
+        // 3. JIKA SUKSES:
+        // Tidak perlu simpan localStorage manual lagi.
+        // NextAuth sudah otomatis simpan "Cookie Sesi" yang aman.
 
-    if (res.ok) {
-        // --- TAMBAHKAN INI ---
-        // Simpan Role user yang login agar bisa dibaca Sidebar
-        localStorage.setItem("userRole", data.role); 
-        localStorage.setItem("userName", data.nama || "User");
-        // ---------------------
-
-        router.push("/dashboard"); 
-        router.refresh();
-      } 
-      else {
-        setError(data.error || "Login gagal");
+        router.refresh(); // PENTING: Refresh biar Sidebar tau kita sudah login
+        router.push("/dashboard");
       }
     } catch (err) {
-      setError("Gagal terhubung ke server");
-    } finally {
+      console.error("Login Error:", err);
+      setError("Terjadi kesalahan sistem");
       setLoading(false);
     }
   };

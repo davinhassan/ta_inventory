@@ -1,168 +1,178 @@
-import prisma from "@/lib/prisma";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-// 1. Import AuthGuard
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import AuthGuard from "@/components/AuthGuard";
-import { UserCog, Save, XCircle, User, Mail, Shield, ChevronLeft } from "lucide-react";
+import { ArrowLeft, Save, Lock, User, Mail } from "lucide-react"; // Tambah ikon Lock
+import Link from "next/link";
 
-export default async function EditPenggunaPage({ params }) {
-  // Ambil ID & Data User
-  const { id } = await params;
-  const userIdInt = parseInt(id);
+export default function EditUserPage() {
+  const router = useRouter();
+  const params = useParams();
+  const { data: session } = useSession();
+  const myRole = session?.user?.role;
 
-  const user = await prisma.pengguna.findUnique({
-    where: { id: userIdInt },
+  // 1. STATE: Tambahkan 'password' agar bisa diganti
+  const [form, setForm] = useState({
+    nama: "",
+    email: "",
+    role: "STAFF",
+    password: "", // Default kosong
   });
+  const [loading, setLoading] = useState(true);
 
-  // --- KONDISI 1: JIKA USER TIDAK KETEMU ---
-  if (!user) {
-    return (
-      // Hanya PEMILIK yang boleh melihat halaman ini (meskipun error)
-      <AuthGuard allowedRoles={["PEMILIK"]}>
-        <div className="max-w-lg mx-auto mt-20 p-8 bg-gray-800 border border-red-900/50 rounded-xl text-center shadow-lg">
-          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-white font-bold text-2xl mb-2">User Tidak Ditemukan</h2>
-          <p className="text-gray-400 mb-6">
-            Data pengguna dengan ID <span className="font-mono text-red-400">{id}</span> tidak tersedia.
-          </p>
-          <Link
-            href="/dashboard/pengguna"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition font-semibold border border-gray-600"
-          >
-            <ChevronLeft size={20}/> Kembali ke Daftar
-          </Link>
-        </div>
-      </AuthGuard>
-    );
-  }
+  // 2. GET DATA: Gunakan API utama lalu filter manual
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        // PERBAIKAN: Jangan pakai /api/pengguna/detail (karena tidak ada)
+        // Pakai /api/pengguna biasa, lalu cari user yang ID-nya cocok
+        const res = await fetch("/api/pengguna");
+        const users = await res.json();
+        const foundUser = users.find((u) => u.id === parseInt(params.id));
 
-  // --- SERVER ACTION UNTUK UPDATE ---
-  async function updateUser(formData) {
-    "use server";
+        if (foundUser) {
+          // --- PROTEKSI FRONTEND ---
+          if (myRole === "ADMIN" && foundUser.role !== "STAFF") {
+            alert("ANDA TIDAK MEMILIKI AKSES MENGEDIT ATASAN/SESAMA ADMIN!");
+            router.push("/dashboard/pengguna");
+            return;
+          }
 
-    const nama = formData.get("nama");
-    const email = formData.get("email");
-    const role = formData.get("role");
+          setForm({
+            nama: foundUser.nama,
+            email: foundUser.email,
+            role: foundUser.role,
+            password: "", // Password dikosongkan (jangan tampilkan hash)
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    try {
-      await prisma.pengguna.update({
-        where: { id: userIdInt },
-        data: { nama, email, role },
-      });
-    } catch (error) {
-      console.error("Gagal update pengguna:", error);
+    if (myRole) fetchUser();
+  }, [params.id, myRole, router]);
+
+  // 3. SUBMIT (PUT)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Proteksi Admin
+    if (myRole === "ADMIN" && form.role !== "STAFF") {
+      alert("Admin tidak boleh menaikkan jabatan user menjadi diatas Staff!");
       return;
     }
-    redirect("/dashboard/pengguna");
-  }
 
-  // --- KONDISI 2: TAMPILAN UTAMA FORM EDIT ---
+    // Panggil API Update (API Route tunggal)
+    const res = await fetch(`/api/pengguna`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: parseInt(params.id), // ID dikirim di Body
+        nama: form.nama,
+        role: form.role,
+        password: form.password, // Password dikirim (kosong/isi)
+      }),
+    });
+
+    if (res.ok) {
+      alert("User berhasil diupdate");
+      router.push("/dashboard/pengguna");
+      router.refresh();
+    } else {
+      const data = await res.json();
+      alert(data.error || "Gagal update");
+    }
+  };
+
+  if (loading) return <p className="p-8 text-white">Memuat data...</p>;
+
   return (
-    // Hanya PEMILIK yang boleh mengakses form edit ini
-    <AuthGuard allowedRoles={["PEMILIK"]}>
-      
-      <div className="max-w-3xl mx-auto p-6">
-        {/* Breadcrumb */}
-        <div className="mb-6 text-sm text-gray-400 flex items-center gap-2">
-          <Link href="/dashboard" className="hover:text-blue-400 transition-colors">Dashboard</Link>
-          <span className="text-gray-600">/</span>
-          <Link href="/dashboard/pengguna" className="hover:text-blue-400 transition-colors">Pengguna</Link>
-          <span className="text-gray-600">/</span>
-          <span className="text-white font-medium px-2 py-0.5 bg-gray-800 rounded text-xs">Edit ID: {user.id}</span>
+    <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
+      <div className="p-8 max-w-lg">
+        <div className="flex items-center gap-4 mb-6">
+          <Link
+            href="/dashboard/pengguna"
+            className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <h1 className="text-2xl font-bold text-white">Edit Pengguna</h1>
         </div>
 
-        {/* Card Form Utama */}
-        <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden">
-          
-          {/* Header Card */}
-          <div className="px-8 py-6 bg-gray-700/50 border-b border-gray-700 flex items-center gap-4">
-            <div className="p-3 bg-blue-900/40 rounded-lg text-blue-400 shadow-sm shadow-blue-900/20 border border-blue-900/50">
-              <UserCog size={28} />
-            </div>
+        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* NAMA */}
             <div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Edit Pengguna</h2>
-              <p className="text-sm text-gray-400 mt-1">
-                Perbarui detail informasi dan hak akses sistem.
-              </p>
-            </div>
-          </div>
-
-          {/* Body Form */}
-          <form action={updateUser} className="p-8 space-y-6">
-            
-            {/* Input Group: Nama */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
-                <User size={18} className="text-blue-400"/> Nama Lengkap
+              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <User size={14} /> Nama
               </label>
               <input
-                type="text"
-                name="nama"
-                defaultValue={user.nama}
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                value={form.nama}
+                onChange={(e) => setForm({ ...form, nama: e.target.value })}
                 required
-                placeholder="Contoh: Budi Santoso"
-                className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               />
             </div>
 
-            {/* Input Group: Email */}
+            {/* EMAIL (Read Only) */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
-                <Mail size={18} className="text-blue-400"/> Alamat Email
+              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <Mail size={14} /> Email
               </label>
               <input
-                type="email"
-                name="email"
-                defaultValue={user.email}
-                required
-                placeholder="contoh@email.com"
-                className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full bg-gray-900/50 border border-gray-700 text-gray-500 p-3 rounded cursor-not-allowed"
+                value={form.email}
+                readOnly
               />
             </div>
 
-            {/* Input Group: Role */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
-                <Shield size={18} className="text-blue-400"/> Role / Jabatan
+            {/* PASSWORD BARU (Fitur Tambahan) */}
+            <div className="bg-yellow-900/10 p-3 rounded-lg border border-yellow-900/30">
+              <label className="text-yellow-500 text-sm mb-1 font-bold flex items-center gap-2">
+                <Lock size={14} /> Ganti Password (Opsional)
               </label>
-              <div className="relative">
-                <select
-                  name="role"
-                  defaultValue={user.role}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none transition-all cursor-pointer"
-                >
-                  <option value="PEMILIK">PEMILIK</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="STAFF">STAFF</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                  <svg className="fill-current h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-2 ml-1">Menentukan tingkat izin akses aplikasi.</p>
+              <input
+                type="password"
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:border-yellow-500 outline-none placeholder-gray-600"
+                placeholder="Biarkan kosong jika tidak diganti"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
             </div>
 
-            {/* Footer: Tombol Aksi */}
-            <div className="flex items-center justify-end gap-4 pt-8 border-t border-gray-700 mt-8">
-              <Link
-                href="/dashboard/pengguna"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-600 text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition-all"
+            {/* ROLE */}
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">
+                Jabatan / Role
+              </label>
+              <select
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
               >
-                <XCircle size={18} />
-                Batal
-              </Link>
-              <button
-                type="submit"
-                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/30 transition-all shadow-lg shadow-blue-900/30 hover:shadow-blue-900/50 active:scale-95"
-              >
-                <Save size={18} />
-                Simpan Perubahan
-              </button>
+                <option value="STAFF">STAFF</option>
+                {/* Sembunyikan opsi Admin/Manajer jika yang login cuma Admin */}
+                {myRole !== "ADMIN" && <option value="ADMIN">ADMIN</option>}
+                {myRole === "PEMILIK" && (
+                  <option value="MANAJER">MANAJER</option>
+                )}
+              </select>
             </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mt-4 flex justify-center items-center gap-2 transition"
+            >
+              <Save size={18} /> Simpan Perubahan
+            </button>
           </form>
         </div>
       </div>
-
     </AuthGuard>
   );
 }

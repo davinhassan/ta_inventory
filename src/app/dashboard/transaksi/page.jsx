@@ -22,8 +22,7 @@ export default async function PageTransaksi() {
   return (
     // 2. Pasang AuthGuard: Izinkan SEMUA ROLE
     // Karena ini adalah fitur operasional utama
-    <AuthGuard allowedRoles={["PEMILIK", "ADMIN", "STAFF"]}>
-      
+    <AuthGuard allowedRoles={["MANAJER", "ADMIN", "STAFF"]}>
       <div className="p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-white">
@@ -104,7 +103,8 @@ export default async function PageTransaksi() {
 
                     {/* Admin (Sementara ID dulu) */}
                     <td className="py-3 px-4 text-xs text-gray-500">
-                      {item.dilakukanOleh?.nama || `ID: ${item.dilakukanOlehId}`}
+                      {item.dilakukanOleh?.nama ||
+                        `ID: ${item.dilakukanOlehId}`}
                     </td>
                   </tr>
                 ))
@@ -113,7 +113,6 @@ export default async function PageTransaksi() {
           </table>
         </div>
       </div>
-
     </AuthGuard>
   );
 }

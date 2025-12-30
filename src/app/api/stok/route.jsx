@@ -1,34 +1,45 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { handler as authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// --- FUNGSI GET (TETAP SAMA) ---
+// 1. GET: AMBIL SEMUA DATA (Semua Role Boleh)
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const sukuCadang = await prisma.sukuCadang.findMany({
-      include: {
-        supplier: true,
-      },
-      // KITA HAPUS BAGIAN orderBy KARENA KOLOM createdAt BELUM ADA
-      // orderBy: {
-      //   createdAt: 'desc' 
-      // }
+      include: { supplier: true },
+      // orderBy: { createdAt: 'desc' } // Opsional
     });
     return NextResponse.json(sukuCadang);
   } catch (error) {
-    console.error("Gagal mengambil data suku cadang:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    console.error("Gagal ambil data:", error);
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
 
-// --- FUNGSI POST (SUDAH DITAMBAH HARGA JUAL) ---
+// 2. POST: TAMBAH BARANG (STAFF DILARANG ⛔)
 export async function POST(request) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // --- PROTEKSI STAFF ---
+  if (session.user.role === "STAFF") {
+    return NextResponse.json(
+      { error: "Akses Ditolak: Staff hanya bisa melihat!" },
+      { status: 403 }
+    );
+  }
+
   try {
     const data = await request.json();
 
-    // 1. Cek Max Stok (Default 50 jika kosong)
+    // Default values
     const maxStokValue = data.maxStok ? parseInt(data.maxStok) : 50;
-
-    // 2. Cek Harga Jual (Default 0 jika kosong)
     const hargaJualValue = data.hargaJual ? parseFloat(data.hargaJual) : 0;
 
     const newSukuCadang = await prisma.sukuCadang.create({
@@ -36,24 +47,18 @@ export async function POST(request) {
         kodeBarang: data.kodeBarang,
         namaBarang: data.namaBarang,
         hargaBeli: parseFloat(data.hargaBeli),
-        
-        // --- BAGIAN BARU: SIMPAN HARGA JUAL ---
         hargaJual: hargaJualValue,
-        // --------------------------------------
-
         stok: 0,
-        maxStok: maxStokValue, 
+        maxStok: maxStokValue,
         supplier: {
-          connect: {
-            id: parseInt(data.supplierId),
-          },
+          connect: { id: parseInt(data.supplierId) },
         },
       },
     });
 
     return NextResponse.json(newSukuCadang, { status: 201 });
   } catch (error) {
-    console.error("Gagal membuat suku cadang baru:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    console.error("Gagal tambah:", error);
+    return NextResponse.json({ error: "Gagal menambah data" }, { status: 500 });
   }
 }

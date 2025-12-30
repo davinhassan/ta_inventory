@@ -15,7 +15,7 @@ generator client {
 enum Role {
   STAFF
   ADMIN
-  PEMILIK
+  MANAJER
 }
 
 // Model untuk Pengguna

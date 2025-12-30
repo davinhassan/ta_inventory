@@ -132,7 +132,7 @@ export default function LaporanPage() {
   }, []);
 
   return (
-    <AuthGuard allowedRoles={["PEMILIK", "ADMIN"]}>
+    <AuthGuard allowedRoles={["MANAJER"]}>
       <div className="p-8">
         {/* HEADER & TOMBOL AKSI */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">

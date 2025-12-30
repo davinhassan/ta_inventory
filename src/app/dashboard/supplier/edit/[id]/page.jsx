@@ -3,8 +3,8 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-// 1. Import AuthGuard
 import AuthGuard from "@/components/AuthGuard";
+import { ArrowLeft, Save, Truck, Phone, MapPin } from "lucide-react"; // Ikon pemanis
 
 export default function EditSupplierPage({ params }) {
   // 1. Ambil ID dengan aman (Next.js 15)
@@ -28,14 +28,10 @@ export default function EditSupplierPage({ params }) {
         const url = `/api/supplier/${id}`;
         const res = await fetch(url, {
           cache: "no-store",
-          headers: {
-            Pragma: "no-cache",
-          },
+          headers: { Pragma: "no-cache" },
         });
 
-        if (!res.ok) {
-          throw new Error(`Gagal fetch: ${res.status} ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error("Gagal mengambil data");
 
         const data = await res.json();
 
@@ -45,17 +41,16 @@ export default function EditSupplierPage({ params }) {
           telepon: data.telepon || "",
         });
       } catch (error) {
-        console.error("ERROR FATAL:", error);
-        alert("Gagal mengambil data: " + error.message);
+        console.error("ERROR:", error);
+        alert("Gagal mengambil data supplier.");
+        router.push("/dashboard/supplier");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (id) {
-      fetchSupplier();
-    }
-  }, [id]);
+    if (id) fetchSupplier();
+  }, [id, router]);
 
   // 3. Handle Simpan
   const handleSubmit = async (e) => {
@@ -79,7 +74,7 @@ export default function EditSupplierPage({ params }) {
       }
     } catch (error) {
       console.error(error);
-      alert("Error jaringan");
+      alert("Error koneksi jaringan");
     } finally {
       setIsSaving(false);
     }
@@ -94,73 +89,87 @@ export default function EditSupplierPage({ params }) {
     return <div className="p-8 text-white">Sedang memuat data...</div>;
 
   return (
-    // 2. Pasang AuthGuard: Izinkan SEMUA ROLE (PEMILIK, ADMIN, STAFF)
-    <AuthGuard allowedRoles={["PEMILIK", "ADMIN", "STAFF"]}>
-      
-      <div className="p-8">
-        <div className="max-w-2xl mx-auto bg-gray-800 p-8 rounded-lg border border-gray-700">
-          <h1 className="text-2xl font-bold mb-6 text-white">
-            Edit Supplier (ID: {id})
-          </h1>
+    // REVISI: HAPUS "STAFF" DARI SINI
+    <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
+      <div className="p-8 max-w-lg">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <Link
+            href="/dashboard/supplier"
+            className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <h1 className="text-2xl font-bold text-white">Edit Supplier</h1>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form Container */}
+        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Nama Supplier */}
             <div>
-              <label className="block text-gray-300 mb-2 text-sm">
-                Nama Supplier
+              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <Truck size={14} /> Nama Supplier
               </label>
               <input
                 type="text"
                 name="namaSupplier"
                 value={formData.namaSupplier}
                 onChange={handleChange}
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded"
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                required
               />
             </div>
 
+            {/* Telepon */}
             <div>
-              <label className="block text-gray-300 mb-2 text-sm">Alamat</label>
-              <textarea
-                name="alamat"
-                value={formData.alamat}
-                onChange={handleChange}
-                rows="3"
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-300 mb-2 text-sm">Telepon</label>
+              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <Phone size={14} /> Telepon
+              </label>
               <input
                 type="text"
                 name="telepon"
                 value={formData.telepon}
                 onChange={handleChange}
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded"
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                required
               />
             </div>
 
-            <div className="flex gap-4 pt-4">
+            {/* Alamat */}
+            <div>
+              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <MapPin size={14} /> Alamat Lengkap
+              </label>
+              <textarea
+                name="alamat"
+                rows="3"
+                value={formData.alamat}
+                onChange={handleChange}
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                required
+              />
+            </div>
+
+            {/* Tombol Aksi */}
+            <div className="pt-4 flex flex-col gap-3">
               <button
                 type="submit"
                 disabled={isSaving}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-6 rounded"
+                className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition disabled:opacity-50"
               >
-                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+                {isSaving ? (
+                  "Menyimpan..."
+                ) : (
+                  <>
+                    <Save size={18} /> Simpan Perubahan
+                  </>
+                )}
               </button>
-
-              <Link href="/dashboard/supplier">
-                <button
-                  type="button"
-                  className="bg-gray-700 hover:bg-gray-600 text-gray-200 font-bold py-2 px-6 rounded"
-                >
-                  Batal
-                </button>
-              </Link>
             </div>
           </form>
         </div>
       </div>
-
     </AuthGuard>
   );
 }

@@ -1,41 +1,36 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function AuthGuard({ children, allowedRoles }) {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Cek apakah ada data role tersimpan?
-    const userRole = localStorage.getItem("userRole");
+    if (status === "loading") return;
 
-    if (!userRole) {
-      // Jika tidak ada role (belum login), tendang ke login
+    if (!session) {
       router.push("/login");
-      return;
-    }
-
-    // 2. Cek apakah role user ada di daftar "allowedRoles"?
-    if (allowedRoles.includes(userRole)) {
-      setAuthorized(true); // IZINKAN
     } else {
-      // DILARANG
-      alert(`Akses Ditolak! Role '${userRole}' tidak diizinkan masuk sini.`);
-      router.push("/dashboard"); // Kembalikan ke dashboard utama
+      // Cek apakah role user ada di daftar allowedRoles
+      // Contoh allowedRoles: ["MANAJER", "ADMIN"]
+      if (allowedRoles && !allowedRoles.includes(session.user.role)) {
+        alert("Anda tidak memiliki akses ke halaman ini!");
+        router.push("/dashboard");
+      }
     }
-    
-    setLoading(false);
-  }, [allowedRoles, router]);
+  }, [session, status, router, allowedRoles]);
 
-  // Tampilkan layar putih/loading saat pengecekan berlangsung
-  if (loading) return <div className="p-10 text-center">Memeriksa Akses...</div>;
+  if (status === "loading" || !session) {
+    return <div className="p-8 text-white">Memuat akses...</div>;
+  }
 
-  // Jika tidak authorized, jangan render apapun (tunggu redirect)
-  if (!authorized) return null;
+  // Jika lolos pengecekan role, tampilkan konten
+  // Pastikan logic ini aman:
+  if (allowedRoles && !allowedRoles.includes(session.user.role)) {
+    return null; // Jangan render apa-apa kalau dilarang
+  }
 
-  // Jika lolos, tampilkan halaman aslinya
-  return <>{children}</>;
+  return children;
 }

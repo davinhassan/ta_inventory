@@ -3,7 +3,6 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-// 1. Import AuthGuard
 import AuthGuard from "@/components/AuthGuard";
 
 function EditStokPage({ params }) {
@@ -21,30 +20,26 @@ function EditStokPage({ params }) {
     kodeBarang: "",
     namaBarang: "",
     hargaBeli: "",
-    hargaJual: "", // Pastikan ada harga jual
-    maxStok: "",   // Pastikan ada batas overstock
+    hargaJual: "",
+    maxStok: "",
     supplierId: "",
   });
 
-  // 2. Fetch Data (Barang & Supplier) saat halaman dibuka
+  // 2. Fetch Data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // A. Ambil Data Barang yang mau diedit
         const resBarang = await fetch(`/api/stok/${id}`, { cache: "no-store" });
         if (!resBarang.ok) throw new Error("Gagal mengambil data barang");
         const dataBarang = await resBarang.json();
 
-        // B. Ambil Daftar Supplier (untuk dropdown)
         const resSupplier = await fetch("/api/supplier");
         const dataSupplier = await resSupplier.json();
 
-        // C. Masukkan data ke State Form
-        setSuppliers(dataSupplier || []); // Pastikan array kosong jika null
+        setSuppliers(dataSupplier || []);
         setFormData({
           kodeBarang: dataBarang.kodeBarang,
           namaBarang: dataBarang.namaBarang,
-          // Gunakan || 0 agar input tidak error jika data kosong
           hargaBeli: dataBarang.hargaBeli || 0,
           hargaJual: dataBarang.hargaJual || 0,
           maxStok: dataBarang.maxStok || 50,
@@ -73,7 +68,7 @@ function EditStokPage({ params }) {
     e.preventDefault();
     setIsSaving(true);
 
-    // KONVERSI PENTING: Pastikan angka dikirim sebagai Number, bukan String
+    // Konversi angka
     const payload = {
       ...formData,
       hargaBeli: Number(formData.hargaBeli),
@@ -84,7 +79,7 @@ function EditStokPage({ params }) {
 
     try {
       const response = await fetch(`/api/stok/${id}`, {
-        method: "PATCH", // Gunakan PATCH untuk update
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -110,15 +105,15 @@ function EditStokPage({ params }) {
   }
 
   return (
-    <AuthGuard allowedRoles={["PEMILIK", "ADMIN", "STAFF"]}>
+    // REVISI: HAPUS "STAFF" DARI SINI
+    <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4 text-white">Edit Suku Cadang</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-          
-          {/* Kode Barang (Read Only - Tidak boleh diubah) */}
+          {/* Kode Barang */}
           <div>
-            <label htmlFor="kodeBarang" className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-gray-300">
               Kode Barang
             </label>
             <input
@@ -128,12 +123,14 @@ function EditStokPage({ params }) {
               readOnly
               className="mt-1 block w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md shadow-sm text-gray-300 cursor-not-allowed sm:text-sm"
             />
-            <p className="text-xs text-gray-500 mt-1">*Kode barang tidak dapat diubah</p>
+            <p className="text-xs text-gray-500 mt-1">
+              *Kode barang tidak dapat diubah
+            </p>
           </div>
 
           {/* Nama Barang */}
           <div>
-            <label htmlFor="namaBarang" className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-gray-300">
               Nama Barang
             </label>
             <input
@@ -146,9 +143,9 @@ function EditStokPage({ params }) {
             />
           </div>
 
-          {/* Supplier Dropdown (Dengan Pengecekan Aman) */}
+          {/* Supplier */}
           <div>
-            <label htmlFor="supplierId" className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-gray-300">
               Supplier
             </label>
             <select
@@ -159,55 +156,67 @@ function EditStokPage({ params }) {
               className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             >
               <option value="">-- Pilih Supplier --</option>
-              {Array.isArray(suppliers) && suppliers.length > 0 ? (
+              {Array.isArray(suppliers) &&
                 suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.namaSupplier}
                   </option>
-                ))
-              ) : (
-                <option disabled>Data supplier tidak tersedia</option>
-              )}
+                ))}
             </select>
           </div>
 
-          {/* GRID: Harga Beli & Harga Jual */}
+          {/* Harga Beli & Jual */}
           <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300">Harga Beli</label>
-                <input
-                  type="number"
-                  name="hargaBeli"
-                  value={formData.hargaBeli}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 sm:text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-green-400">Harga Jual</label>
-                <input
-                  type="number"
-                  name="hargaJual"
-                  value={formData.hargaJual}
-                  onChange={handleChange}
-                  required
-                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-green-600 rounded-md shadow-sm text-white focus:ring-green-500 sm:text-sm"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
+                Harga Beli
+              </label>
+              <input
+                type="number"
+                name="hargaBeli"
+                value={formData.hargaBeli}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-green-400">
+                Harga Jual
+              </label>
+              <input
+                type="number"
+                name="hargaJual"
+                value={formData.hargaJual}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-green-600 rounded-md shadow-sm text-white focus:ring-green-500 sm:text-sm"
+              />
+            </div>
           </div>
 
           {/* Margin Preview */}
           <div className="text-sm">
-             <span className="text-gray-400">Estimasi Margin: </span>
-             <span className={(Number(formData.hargaJual) - Number(formData.hargaBeli)) >= 0 ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
-                Rp {(Number(formData.hargaJual) - Number(formData.hargaBeli)).toLocaleString('id-ID')}
-             </span>
+            <span className="text-gray-400">Estimasi Margin: </span>
+            <span
+              className={
+                Number(formData.hargaJual) - Number(formData.hargaBeli) >= 0
+                  ? "text-green-400 font-bold"
+                  : "text-red-400 font-bold"
+              }
+            >
+              Rp{" "}
+              {(
+                Number(formData.hargaJual) - Number(formData.hargaBeli)
+              ).toLocaleString("id-ID")}
+            </span>
           </div>
 
           {/* Batas Overstock */}
           <div>
-            <label className="block text-sm font-bold text-orange-400">Batas Overstock</label>
+            <label className="block text-sm font-bold text-orange-400">
+              Batas Overstock
+            </label>
             <input
               type="number"
               name="maxStok"
@@ -216,7 +225,9 @@ function EditStokPage({ params }) {
               required
               className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-orange-600 rounded-md shadow-sm text-white focus:ring-orange-500 sm:text-sm"
             />
-            <p className="text-xs text-gray-500 mt-1">Peringatan muncul jika stok melebihi angka ini.</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Peringatan muncul jika stok melebihi angka ini.
+            </p>
           </div>
 
           {/* Tombol Aksi */}

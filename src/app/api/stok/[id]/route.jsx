@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { handler as authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// 1. GET: Ambil Detail Barang
+// 1. GET: Ambil Detail Barang (SEMUA ROLE BOLEH LIHAT)
 export async function GET(request, { params }) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
-    // Next.js 15 butuh await params
     const { id } = await params;
 
     const barang = await prisma.sukuCadang.findUnique({
       where: { id: parseInt(id) },
-      // Optional: include relasi jika ingin melihat detail supplier/transaksi
-      // include: { supplier: true }
+      include: { supplier: true },
     });
 
     if (!barang) {
@@ -27,13 +31,25 @@ export async function GET(request, { params }) {
   }
 }
 
-// 2. PATCH: Update Barang (Harga Jual & Beli)
+// 2. PATCH: Update Barang (STAFF DILARANG ⛔)
 export async function PATCH(request, { params }) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // --- PROTEKSI: STAFF DILARANG EDIT ---
+  if (session.user.role === "STAFF") {
+    return NextResponse.json(
+      { error: "Akses Ditolak: Staff tidak boleh mengedit data!" },
+      { status: 403 }
+    );
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
 
-    // Debugging untuk melihat data yang dikirim frontend
+    // Debugging
     console.log("Data update diterima:", body);
 
     const updated = await prisma.sukuCadang.update({
@@ -41,16 +57,14 @@ export async function PATCH(request, { params }) {
       data: {
         kodeBarang: body.kodeBarang,
         namaBarang: body.namaBarang,
-        supplierId: parseInt(body.supplierId), // Pastikan Integer
+        supplierId: parseInt(body.supplierId),
 
-        // Konversi Harga ke Float (Desimal)
+        // Konversi ke Float/Integer
         hargaBeli: parseFloat(body.hargaBeli),
 
-        // Update Harga Jual (Jika ada, parse ke Float. Jika tidak, abaikan)
+        // Update kondisional (hanya jika dikirim)
         hargaJual:
           body.hargaJual !== undefined ? parseFloat(body.hargaJual) : undefined,
-
-        // Update Max Stok (Integer)
         maxStok:
           body.maxStok !== undefined ? parseInt(body.maxStok) : undefined,
       },
@@ -66,8 +80,20 @@ export async function PATCH(request, { params }) {
   }
 }
 
-// 3. DELETE: Hapus Barang (Dengan Proteksi Relasi)
+// 3. DELETE: Hapus Barang (STAFF DILARANG ⛔)
 export async function DELETE(request, { params }) {
+  const session = await getServerSession(authOptions);
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // --- PROTEKSI: STAFF DILARANG HAPUS ---
+  if (session.user.role === "STAFF") {
+    return NextResponse.json(
+      { error: "Akses Ditolak: Staff tidak boleh menghapus data!" },
+      { status: 403 }
+    );
+  }
+
   try {
     const { id } = await params;
 
@@ -79,15 +105,14 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error("Error DELETE:", error);
 
-    // MENANGANI ERROR FOREIGN KEY (P2003)
-    // Ini terjadi jika barang sudah pernah dipakai di Transaksi atau PO
+    // Error Prisma P2003: Foreign Key Constraint
     if (error.code === "P2003") {
       return NextResponse.json(
         {
           error:
-            "Tidak dapat dihapus: Barang ini memiliki riwayat transaksi atau tercatat di PO.",
+            "Gagal: Barang ini sudah memiliki riwayat transaksi/PO dan tidak bisa dihapus.",
         },
-        { status: 400 } // Bad Request
+        { status: 400 }
       );
     }
 

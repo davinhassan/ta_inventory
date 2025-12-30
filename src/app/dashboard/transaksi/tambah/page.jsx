@@ -10,7 +10,7 @@ export default function TambahTransaksiPage() {
   const router = useRouter();
   const [items, setItems] = useState([]); // List barang untuk dropdown
   const [loading, setLoading] = useState(false);
-  
+
   // State Form
   const [formData, setFormData] = useState({
     sukuCadangId: "",
@@ -78,16 +78,14 @@ export default function TambahTransaksiPage() {
 
   return (
     // 3. Pasang AuthGuard: Izinkan SEMUA ROLE (Operasional harian)
-    <AuthGuard allowedRoles={["PEMILIK", "ADMIN", "STAFF"]}>
-      
+    <AuthGuard allowedRoles={["MANAJER", "ADMIN", "STAFF"]}>
       <div className="p-8">
         <div className="max-w-lg mx-auto bg-gray-800 p-8 rounded-lg border border-gray-700 shadow-xl">
           <h1 className="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-4">
             Catat Transaksi Baru
           </h1>
-          
+
           <form onSubmit={handleSubmit} className="space-y-5">
-            
             {/* Pilih Barang */}
             <div>
               <label className="block text-gray-300 mb-2 text-sm font-medium">
@@ -121,7 +119,9 @@ export default function TambahTransaksiPage() {
                 className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 <option value="MASUK">🟢 Barang Masuk (Stok Bertambah)</option>
-                <option value="KELUAR">🔴 Barang Keluar (Stok Berkurang)</option>
+                <option value="KELUAR">
+                  🔴 Barang Keluar (Stok Berkurang)
+                </option>
               </select>
             </div>
 
@@ -171,7 +171,11 @@ export default function TambahTransaksiPage() {
                 type="submit"
                 disabled={loading}
                 className={`flex-1 font-bold py-2.5 px-6 rounded-lg transition-colors shadow-lg text-white
-                  ${loading ? "bg-gray-600 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-blue-900/50"}`}
+                  ${
+                    loading
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 shadow-blue-900/50"
+                  }`}
               >
                 {loading ? "Menyimpan..." : "Simpan Transaksi"}
               </button>
@@ -179,7 +183,6 @@ export default function TambahTransaksiPage() {
           </form>
         </div>
       </div>
-
     </AuthGuard>
   );
 }
