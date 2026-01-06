@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
-import { handler as authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+// --- PERBAIKAN PENTING DI SINI ---
+// Ambil authOptions dari file baru di lib
+import { authOptions } from "@/lib/auth"; 
+// ---------------------------------
 
 // 1. GET: AMBIL DATA USER
 export async function GET(request) {
   const session = await getServerSession(authOptions);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const myRole = session.user.role;
 
@@ -38,8 +41,7 @@ export async function GET(request) {
 // 2. POST: TAMBAH USER BARU
 export async function POST(request) {
   const session = await getServerSession(authOptions);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const myRole = session.user.role;
   const body = await request.json();
@@ -70,8 +72,7 @@ export async function POST(request) {
 // 3. DELETE: HAPUS USER
 export async function DELETE(request) {
   const session = await getServerSession(authOptions);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const id = parseInt(searchParams.get("id"));
@@ -103,8 +104,7 @@ export async function DELETE(request) {
 // 4. PUT: EDIT USER & GANTI PASSWORD
 export async function PUT(request) {
   const session = await getServerSession(authOptions);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const myRole = session.user.role;
   const body = await request.json();

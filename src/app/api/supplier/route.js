@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { handler as authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
-// 1. GET: Ambil Semua Supplier (SEMUA ROLE BOLEH LIHAT)
+
+// GET: Ambil Semua Supplier
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const suppliers = await prisma.supplier.findMany({
@@ -15,17 +15,16 @@ export async function GET() {
     });
     return NextResponse.json(suppliers);
   } catch (error) {
-    console.error("Error GET Supplier:", error);
     return NextResponse.json({ error: "Gagal ambil data" }, { status: 500 });
   }
 }
 
+// POST: Tambah Supplier Baru
 export async function POST(request) {
   const session = await getServerSession(authOptions);
-  if (!session)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // --- PROTEKSI: STAFF DILARANG TAMBAH DATA ---
+  // PROTEKSI: Staff tidak boleh tambah
   if (session.user.role === "STAFF") {
     return NextResponse.json(
       { error: "Akses Ditolak: Staff hanya bisa melihat data!" },
@@ -37,6 +36,11 @@ export async function POST(request) {
     const body = await request.json();
     const { namaSupplier, alamat, telepon } = body;
 
+    // Validasi Input Sederhana
+    if (!namaSupplier || !telepon) {
+        return NextResponse.json({ error: "Nama dan Telepon wajib diisi" }, { status: 400 });
+    }
+
     const newSupplier = await prisma.supplier.create({
       data: {
         namaSupplier,
@@ -46,7 +50,13 @@ export async function POST(request) {
     });
 
     return NextResponse.json(newSupplier, { status: 201 });
+
   } catch (error) {
+    // MENANGANI DUPLIKAT DATA
+    if (error.code === 'P2002') {
+        return NextResponse.json({ error: "Nomor Telepon sudah terdaftar!" }, { status: 400 });
+    }
+    
     console.error("Error POST Supplier:", error);
     return NextResponse.json({ error: "Gagal tambah data" }, { status: 500 });
   }

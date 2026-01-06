@@ -2,23 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "next-auth/react"; // Import Session
 import AuthGuard from "@/components/AuthGuard";
-import { ArrowLeft, Save, User, Mail, Lock } from "lucide-react"; // Tambah ikon
-import Link from "next/link";
+import { ArrowLeft, Save, User, Mail, Lock, Shield } from "lucide-react";
 
 export default function TambahUserPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const myRole = session?.user?.role;
+  const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     nama: "",
     email: "",
     password: "",
-    role: "STAFF",
+    role: "STAFF", // Default
   });
-  const [loading, setLoading] = useState(false);
+
+  const currentUserRole = session?.user?.role;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,117 +28,115 @@ export default function TambahUserPage() {
       const res = await fetch("/api/pengguna", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(formData),
       });
 
-      if (res.ok) {
-        alert("User berhasil dibuat!");
-        router.push("/dashboard/pengguna");
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Gagal membuat user");
-      }
-    } catch (err) {
-      alert("Error sistem");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Gagal tambah user");
+
+      alert("User berhasil ditambahkan!");
+      router.push("/dashboard/pengguna");
+    } catch (error) {
+      alert(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
-      <div className="p-8 max-w-lg">
-        <div className="flex items-center gap-4 mb-6">
-          <Link
-            href="/dashboard/pengguna"
-            className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="text-2xl font-bold text-white">Tambah User Baru</h1>
-        </div>
+    // Pastikan Manajer dan Admin bisa masuk sini
+    <AuthGuard allowedRoles={["MANAJER", "PEMILIK", "ADMIN"]}>
+      <div className="p-8 max-w-2xl mx-auto">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-white mb-6">
+          <ArrowLeft size={20} /> Kembali
+        </button>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Input Nama */}
-            <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <User size={14} /> Nama Lengkap
-              </label>
-              <input
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none transition"
-                placeholder="Contoh: Budi Santoso"
-                value={form.nama}
-                onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                required
-              />
-            </div>
+        <h1 className="text-2xl font-bold text-white mb-6">Tambah User Baru</h1>
 
-            {/* Input Email */}
-            <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <Mail size={14} /> Email Login
-              </label>
-              <input
-                type="email"
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none transition"
-                placeholder="budi@bengkel.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="bg-gray-800 p-8 rounded-xl border border-gray-700 shadow-xl space-y-6">
+          
+          {/* NAMA */}
+          <div>
+            <label className="block text-gray-400 text-sm mb-2 flex items-center gap-2">
+              <User size={16}/> Nama Lengkap
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="Contoh: Budi Santoso"
+              value={formData.nama}
+              onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+            />
+          </div>
 
-            {/* Input Password */}
-            <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <Lock size={14} /> Password
-              </label>
-              <input
-                type="password"
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none transition"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-              />
-            </div>
+          {/* EMAIL */}
+          <div>
+            <label className="block text-gray-400 text-sm mb-2 flex items-center gap-2">
+              <Mail size={16}/> Email Login
+            </label>
+            <input
+              type="email"
+              required
+              className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="nama@email.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
 
-            {/* Dropdown Role Pintar */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">
-                Jabatan / Role
-              </label>
-              <select
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none transition"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                <option value="STAFF">STAFF</option>
-                {/* Logika: Sembunyikan Admin/Manajer jika yg login cuma Admin */}
-                {myRole !== "ADMIN" && <option value="ADMIN">ADMIN</option>}
-                {myRole === "PEMILIK" && (
-                  <option value="MANAJER">MANAJER</option>
-                )}
-              </select>
-            </div>
+          {/* PASSWORD */}
+          <div>
+            <label className="block text-gray-400 text-sm mb-2 flex items-center gap-2">
+              <Lock size={16}/> Password
+            </label>
+            <input
+              type="password"
+              required
+              className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="Minimal 6 karakter"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mt-4 flex justify-center items-center gap-2 transition"
+          {/* ROLE SELECTOR (BAGIAN YANG DIPERBAIKI) */}
+          <div>
+            <label className="block text-gray-400 text-sm mb-2 flex items-center gap-2">
+              <Shield size={16}/> Jabatan / Role
+            </label>
+            <select
+              className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:outline-none focus:border-blue-500"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             >
-              {loading ? (
-                "Menyimpan..."
-              ) : (
+              {/* ADMIN hanya bisa tambah STAFF */}
+              {currentUserRole === "ADMIN" && (
+                <option value="STAFF">STAFF</option>
+              )}
+
+              {/* MANAJER/PEMILIK bisa tambah SEMUA */}
+              {(currentUserRole === "MANAJER" || currentUserRole === "PEMILIK") && (
                 <>
-                  <Save size={18} /> Buat User
+                  <option value="STAFF">STAFF</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="MANAJER">MANAJER</option>
                 </>
               )}
-            </button>
-          </form>
-        </div>
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              *Hak akses akan disesuaikan dengan jabatan yang dipilih.
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg flex justify-center items-center gap-2 transition disabled:opacity-50"
+          >
+            {loading ? "Menyimpan..." : <><Save size={20} /> Simpan User</>}
+          </button>
+        </form>
       </div>
     </AuthGuard>
   );

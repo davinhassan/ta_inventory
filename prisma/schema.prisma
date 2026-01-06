@@ -1,103 +1,132 @@
-// 1. Konfigurasi Koneksi Database
+// 1. Konfigurasi Koneksi (Supabase Ready)
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// 2. Konfigurasi Prisma Client
 generator client {
   provider = "prisma-client-js"
 }
 
-// 3. Definisi Model (Hasil terjemahan Class Diagram kita)
-
-// Enum untuk Role Pengguna
+// --- USER ---
 enum Role {
   STAFF
   ADMIN
   MANAJER
+  PEMILIK
 }
 
-// Model untuk Pengguna
 model Pengguna {
   id             Int             @id @default(autoincrement())
   nama           String
   email          String          @unique
   password       String
   role           Role            @default(STAFF)
-  purchaseOrders PurchaseOrder[]
   transaksiStok  TransaksiStok[]
+  purchaseOrders PurchaseOrder[]
+  penjualan      Transaksi[]
 }
 
-// Model untuk Supplier
+// --- SUPPLIER ---
 model Supplier {
-  id           Int          @id @default(autoincrement())
-  namaSupplier String
-  alamat       String
-  telepon      String       @unique
-  sukuCadang   SukuCadang[]
+  id             Int             @id @default(autoincrement())
+  namaSupplier   String
+  alamat         String
+  telepon        String          @unique
+  sukuCadang     SukuCadang[]
+  purchaseOrders PurchaseOrder[]
 }
 
-// Model untuk Suku Cadang (inti dari inventaris)
+// --- BARANG ---
 model SukuCadang {
-  id         Int             @id @default(autoincrement())
-  kodeBarang String          @unique
-  namaBarang String
-  stok       Int
-  maxStok    Int             @default(50) // Pastikan ini ada
-  hargaBeli  Float // Tipe data Float agar support desimal
-  hargaJual  Float           @default(0) // <--- TAMBAHKAN INI
-  supplierId Int?
-  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
-  transaksi  TransaksiStok[]
-  detailPOs  DetailPO[]
+  id              Int               @id @default(autoincrement())
+  kodeBarang      String            @unique
+  namaBarang      String
+  stok            Int
+  minStok         Int               @default(5)
+  maxStok         Int               @default(50)
+  hargaBeli       Float
+  hargaJual       Float             @default(0)
+  supplierId      Int?
+  supplier        Supplier?         @relation(fields: [supplierId], references: [id])
+  transaksiStok   TransaksiStok[]
+  detailPOs       DetailPO[]
+  detailJual      DetailTransaksi[]
 }
 
-// Enum untuk Status Purchase Order
+// --- BARANG MASUK (PO) + BUKTI FOTO ---
 enum StatusPO {
-  DRAFT
-  MENUNGGU_PERSETUJUAN
-  DISETUJUI
-  DITOLAK
+  PENDING
   SELESAI
+  DIBATALKAN
 }
 
-// Model untuk Purchase Order (PO)
 model PurchaseOrder {
   id           Int        @id @default(autoincrement())
+  noPO         String     @unique
   tanggalPesan DateTime   @default(now())
-  status       StatusPO   @default(DRAFT)
-  dibuatOleh   Pengguna   @relation(fields: [dibuatOlehId], references: [id])
+  status       StatusPO   @default(PENDING)
+  
+  // KOLOM BARU UNTUK GAMBAR FAKTUR
+  buktiFoto    String?    
+
+  supplierId   Int
+  supplier     Supplier   @relation(fields: [supplierId], references: [id])
   dibuatOlehId Int
+  dibuatOleh   Pengguna   @relation(fields: [dibuatOlehId], references: [id])
   items        DetailPO[]
 }
 
-// Model untuk DetailPO (Tabel penghubung antara PO dan SukuCadang)
 model DetailPO {
-  jumlah          Int
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  id              Int           @id @default(autoincrement())
   purchaseOrderId Int
-  sukuCadang      SukuCadang    @relation(fields: [sukuCadangId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   sukuCadangId    Int
-
-  @@id([purchaseOrderId, sukuCadangId])
+  sukuCadang      SukuCadang    @relation(fields: [sukuCadangId], references: [id])
+  jumlah          Int
 }
 
-// Enum untuk Tipe Transaksi Stok
+// --- BARANG KELUAR (TRANSAKSI) + BUKTI FOTO ---
+model Transaksi {
+  id        Int      @id @default(autoincrement())
+  total     Float
+  status    String   @default("LUNAS")
+  tanggal   DateTime @default(now())
+  
+  // Bukti Struk
+  buktiFoto String? 
+  
+  userId    Int
+  user      Pengguna @relation(fields: [userId], references: [id])
+  detail    DetailTransaksi[]
+}
+
+model DetailTransaksi {
+  id           Int        @id @default(autoincrement())
+  transaksiId  Int
+  transaksi    Transaksi  @relation(fields: [transaksiId], references: [id], onDelete: Cascade)
+  sukuCadangId Int
+  sukuCadang   SukuCadang @relation(fields: [sukuCadangId], references: [id])
+  jumlah       Int
+  hargaSatuan  Float
+  subtotal     Float
+}
+
+// --- RIWAYAT LOG OTOMATIS ---
 enum TipeTransaksi {
   MASUK
   KELUAR
 }
 
-// Model untuk Transaksi Stok (Riwayat pergerakan barang)
 model TransaksiStok {
   id              Int           @id @default(autoincrement())
   tanggal         DateTime      @default(now())
   tipe            TipeTransaksi
   jumlah          Int
   keterangan      String?
-  sukuCadang      SukuCadang    @relation(fields: [sukuCadangId], references: [id])
   sukuCadangId    Int
-  dilakukanOleh   Pengguna      @relation(fields: [dilakukanOlehId], references: [id])
+  sukuCadang      SukuCadang    @relation(fields: [sukuCadangId], references: [id])
   dilakukanOlehId Int
+  dilakukanOleh   Pengguna      @relation(fields: [dilakukanOlehId], references: [id])
 }
