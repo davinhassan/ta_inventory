@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
-import { ArrowLeft, Save } from "lucide-react"; // Tambah ikon biar cantik
+import { ArrowLeft, Save } from "lucide-react";
 
 function PageTambahStok() {
   const router = useRouter();
@@ -18,8 +17,8 @@ function PageTambahStok() {
     kodeBarang: "",
     namaBarang: "",
     hargaBeli: "",
-    hargaJual: "", // Field baru
-    maxStok: "", // Field baru
+    hargaJual: "",
+    maxStok: "",
     supplierId: "",
   });
 
@@ -30,7 +29,6 @@ function PageTambahStok() {
         const response = await fetch("/api/supplier");
         const data = await response.json();
 
-        // Validasi Array
         if (Array.isArray(data)) {
           setSuppliers(data);
         } else {
@@ -58,12 +56,11 @@ function PageTambahStok() {
     e.preventDefault();
     setIsSaving(true);
 
-    // Konversi angka sebelum kirim
     const payload = {
       ...formData,
       hargaBeli: Number(formData.hargaBeli),
       hargaJual: Number(formData.hargaJual || 0),
-      maxStok: Number(formData.maxStok || 50), // Default 50
+      maxStok: Number(formData.maxStok || 50),
       supplierId: Number(formData.supplierId),
     };
 
@@ -91,26 +88,27 @@ function PageTambahStok() {
   };
 
   return (
-    // REVISI: HAPUS "STAFF" DARI SINI
     <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
-      <div className="p-8 max-w-lg">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Link
-            href="/dashboard/stok"
-            className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="text-2xl font-bold text-white">Tambah Barang Baru</h1>
-        </div>
+      {/* 1. Responsif Padding & Container: p-4 di HP, p-8 di Desktop */}
+      <div className="p-4 md:p-8 w-full max-w-lg mx-auto">
+        
+        {/* Tombol Kembali Responsif */}
+        <button 
+            onClick={() => router.back()} 
+            className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition hover:bg-gray-800 p-2 rounded-lg -ml-2 w-fit"
+        >
+          <ArrowLeft size={20} /> <span className="text-sm md:text-base">Kembali</span>
+        </button>
+
+        <h1 className="text-xl md:text-2xl font-bold text-white mb-6">Tambah Barang Baru</h1>
 
         {/* Form Container */}
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-gray-800 p-5 md:p-8 rounded-xl border border-gray-700 shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
             {/* Kode Barang */}
             <div>
-              <label className="block text-sm font-medium text-gray-300">
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
                 Kode Barang
               </label>
               <input
@@ -119,14 +117,14 @@ function PageTambahStok() {
                 value={formData.kodeBarang}
                 onChange={handleChange}
                 placeholder="Contoh: BRG-001"
-                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base placeholder-gray-500"
                 required
               />
             </div>
 
             {/* Nama Barang */}
             <div>
-              <label className="block text-sm font-medium text-gray-300">
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
                 Nama Barang
               </label>
               <input
@@ -135,15 +133,15 @@ function PageTambahStok() {
                 value={formData.namaBarang}
                 onChange={handleChange}
                 placeholder="Contoh: Oli Mesin 1L"
-                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base placeholder-gray-500"
                 required
               />
             </div>
 
-            {/* GRID: Harga Beli & Harga Jual */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* 2. Grid Responsif: 1 Kolom di HP, 2 Kolom di Desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-medium text-gray-300">
+                <label className="block text-sm font-medium text-gray-400 mb-1.5">
                   Harga Beli
                 </label>
                 <input
@@ -151,13 +149,13 @@ function PageTambahStok() {
                   name="hargaBeli"
                   value={formData.hargaBeli}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm md:text-base placeholder-gray-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-green-400">
+                <label className="block text-sm font-bold text-green-400 mb-1.5">
                   Harga Jual
                 </label>
                 <input
@@ -165,61 +163,67 @@ function PageTambahStok() {
                   name="hargaJual"
                   value={formData.hargaJual}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-green-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full bg-gray-900 border border-green-600/50 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500 transition text-sm md:text-base placeholder-gray-500"
                   required
                 />
               </div>
             </div>
 
             {/* Margin Preview */}
-            <div className="text-sm">
-              <span className="text-gray-400">Estimasi Margin: </span>
-              <span
+            <div className="text-sm bg-gray-900/50 p-3 rounded-lg border border-gray-700">
+                <span className="text-gray-400">Estimasi Margin: </span>
+                <span
                 className={
-                  Number(formData.hargaJual) - Number(formData.hargaBeli) >= 0
-                    ? "text-green-400 font-bold"
-                    : "text-red-400 font-bold"
+                    Number(formData.hargaJual) - Number(formData.hargaBeli) >= 0
+                    ? "text-green-400 font-bold ml-1"
+                    : "text-red-400 font-bold ml-1"
                 }
-              >
+                >
                 Rp{" "}
                 {(
-                  Number(formData.hargaJual) - Number(formData.hargaBeli)
+                    Number(formData.hargaJual) - Number(formData.hargaBeli)
                 ).toLocaleString("id-ID")}
-              </span>
+                </span>
             </div>
 
             {/* Supplier Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-300">
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">
                 Supplier
               </label>
-              <select
-                name="supplierId"
-                value={formData.supplierId}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">-- Pilih Supplier --</option>
-                {!isLoadingSuppliers &&
-                Array.isArray(suppliers) &&
-                suppliers.length > 0 ? (
-                  suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.namaSupplier}
+              <div className="relative">
+                <select
+                    name="supplierId"
+                    value={formData.supplierId}
+                    onChange={handleChange}
+                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition text-sm md:text-base"
+                    required
+                >
+                    <option value="">-- Pilih Supplier --</option>
+                    {!isLoadingSuppliers &&
+                    Array.isArray(suppliers) &&
+                    suppliers.length > 0 ? (
+                    suppliers.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>
+                        {supplier.namaSupplier}
+                        </option>
+                    ))
+                    ) : (
+                    <option disabled>
+                        {isLoadingSuppliers ? "Memuat..." : "Data supplier kosong"}
                     </option>
-                  ))
-                ) : (
-                  <option disabled>
-                    {isLoadingSuppliers ? "Memuat..." : "Data supplier kosong"}
-                  </option>
-                )}
-              </select>
+                    )}
+                </select>
+                {/* Custom Arrow */}
+                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                </div>
+              </div>
             </div>
 
             {/* Max Stok */}
             <div>
-              <label className="block text-sm font-medium text-orange-400">
+              <label className="block text-sm font-bold text-orange-400 mb-1.5">
                 Batas Max Stok (Opsional)
               </label>
               <input
@@ -228,7 +232,7 @@ function PageTambahStok() {
                 value={formData.maxStok}
                 onChange={handleChange}
                 placeholder="Default: 50"
-                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-orange-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full bg-gray-900 border border-orange-600/50 rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition text-sm md:text-base placeholder-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Sistem akan memberi peringatan jika stok melebihi angka ini.
@@ -240,7 +244,7 @@ function PageTambahStok() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition"
+                className="w-full flex justify-center items-center gap-2 py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-900/20 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
               >
                 {isSaving ? (
                   "Menyimpan..."

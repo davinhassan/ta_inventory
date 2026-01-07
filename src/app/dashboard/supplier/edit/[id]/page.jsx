@@ -4,10 +4,9 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
-import { ArrowLeft, Save, Truck, Phone, MapPin } from "lucide-react"; // Ikon pemanis
+import { ArrowLeft, Save, Truck, Phone, MapPin } from "lucide-react";
 
 export default function EditSupplierPage({ params }) {
-  // 1. Ambil ID dengan aman (Next.js 15)
   const resolvedParams = use(params);
   const id = resolvedParams.id;
 
@@ -21,7 +20,7 @@ export default function EditSupplierPage({ params }) {
     telepon: "",
   });
 
-  // 2. Fetch Data
+  // Fetch Data (Logic tetap sama)
   useEffect(() => {
     const fetchSupplier = async () => {
       try {
@@ -52,7 +51,7 @@ export default function EditSupplierPage({ params }) {
     if (id) fetchSupplier();
   }, [id, router]);
 
-  // 3. Handle Simpan
+  // Handle Simpan (Logic tetap sama)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -86,88 +85,107 @@ export default function EditSupplierPage({ params }) {
   };
 
   if (isLoading)
-    return <div className="p-8 text-white">Sedang memuat data...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[50vh] text-white">
+        <span className="animate-pulse">Sedang memuat data...</span>
+      </div>
+    );
 
   return (
-    // REVISI: HAPUS "STAFF" DARI SINI
     <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
-      <div className="p-8 max-w-lg">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Link
-            href="/dashboard/supplier"
-            className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="text-2xl font-bold text-white">Edit Supplier</h1>
-        </div>
+      {/* RESPONSIVE UPDATE:
+        1. p-4: Padding kecil untuk mobile.
+        2. md:p-8: Padding besar untuk tablet ke atas.
+        3. min-h-screen: Agar background selalu penuh.
+      */}
+      <div className="p-4 md:p-8 w-full min-h-screen">
+        
+        {/* Container Form: max-w-lg agar tidak terlalu lebar di monitor besar, mx-auto biar di tengah */}
+        <div className="max-w-lg mx-auto">
+          
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <Link
+              href="/dashboard/supplier"
+              className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white transition hover:bg-gray-700"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <h1 className="text-xl md:text-2xl font-bold text-white">
+              Edit Supplier
+            </h1>
+          </div>
 
-        {/* Form Container */}
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Nama Supplier */}
-            <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <Truck size={14} /> Nama Supplier
-              </label>
-              <input
-                type="text"
-                name="namaSupplier"
-                value={formData.namaSupplier}
-                onChange={handleChange}
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                required
-              />
-            </div>
+          {/* Form Container */}
+          <div className="bg-gray-800 p-4 sm:p-6 rounded-xl border border-gray-700 shadow-lg">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+              
+              {/* Nama Supplier */}
+              <div>
+                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                  <Truck size={14} /> Nama Supplier
+                </label>
+                <input
+                  type="text"
+                  name="namaSupplier"
+                  value={formData.namaSupplier}
+                  onChange={handleChange}
+                  placeholder="Contoh: PT. Maju Jaya"
+                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder-gray-600"
+                  required
+                />
+              </div>
 
-            {/* Telepon */}
-            <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <Phone size={14} /> Telepon
-              </label>
-              <input
-                type="text"
-                name="telepon"
-                value={formData.telepon}
-                onChange={handleChange}
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                required
-              />
-            </div>
+              {/* Telepon */}
+              <div>
+                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                  <Phone size={14} /> Telepon
+                </label>
+                <input
+                  type="tel" 
+                  name="telepon"
+                  value={formData.telepon}
+                  onChange={handleChange}
+                  placeholder="0812..."
+                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder-gray-600"
+                  required
+                />
+              </div>
 
-            {/* Alamat */}
-            <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <MapPin size={14} /> Alamat Lengkap
-              </label>
-              <textarea
-                name="alamat"
-                rows="3"
-                value={formData.alamat}
-                onChange={handleChange}
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                required
-              />
-            </div>
+              {/* Alamat */}
+              <div>
+                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                  <MapPin size={14} /> Alamat Lengkap
+                </label>
+                <textarea
+                  name="alamat"
+                  rows="3"
+                  value={formData.alamat}
+                  onChange={handleChange}
+                  placeholder="Jalan..."
+                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm sm:text-base placeholder-gray-600"
+                  required
+                />
+              </div>
 
-            {/* Tombol Aksi */}
-            <div className="pt-4 flex flex-col gap-3">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition disabled:opacity-50"
-              >
-                {isSaving ? (
-                  "Menyimpan..."
-                ) : (
-                  <>
-                    <Save size={18} /> Simpan Perubahan
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+              {/* Tombol Aksi */}
+              <div className="pt-2 sm:pt-4">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition disabled:opacity-50 active:scale-[0.98]"
+                >
+                  {isSaving ? (
+                    "Menyimpan..."
+                  ) : (
+                    <>
+                      <Save size={18} /> Simpan Perubahan
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </AuthGuard>

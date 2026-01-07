@@ -59,7 +59,7 @@ model SukuCadang {
 enum StatusPO {
   PENDING
   SELESAI
-  DIBATALKAN
+  DITOLAK
 }
 
 model PurchaseOrder {

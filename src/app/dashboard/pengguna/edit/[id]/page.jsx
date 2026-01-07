@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import AuthGuard from "@/components/AuthGuard";
-import { ArrowLeft, Save, Lock, User, Mail } from "lucide-react"; // Tambah ikon Lock
+import { ArrowLeft, Save, Lock, User, Mail, Shield } from "lucide-react"; // Tambah Shield ikon
 import Link from "next/link";
 
 export default function EditUserPage() {
@@ -13,21 +13,18 @@ export default function EditUserPage() {
   const { data: session } = useSession();
   const myRole = session?.user?.role;
 
-  // 1. STATE: Tambahkan 'password' agar bisa diganti
   const [form, setForm] = useState({
     nama: "",
     email: "",
     role: "STAFF",
-    password: "", // Default kosong
+    password: "", 
   });
   const [loading, setLoading] = useState(true);
 
-  // 2. GET DATA: Gunakan API utama lalu filter manual
+  // 2. GET DATA
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // PERBAIKAN: Jangan pakai /api/pengguna/detail (karena tidak ada)
-        // Pakai /api/pengguna biasa, lalu cari user yang ID-nya cocok
         const res = await fetch("/api/pengguna");
         const users = await res.json();
         const foundUser = users.find((u) => u.id === parseInt(params.id));
@@ -44,7 +41,7 @@ export default function EditUserPage() {
             nama: foundUser.nama,
             email: foundUser.email,
             role: foundUser.role,
-            password: "", // Password dikosongkan (jangan tampilkan hash)
+            password: "", 
           });
         }
       } catch (error) {
@@ -61,21 +58,19 @@ export default function EditUserPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Proteksi Admin
     if (myRole === "ADMIN" && form.role !== "STAFF") {
       alert("Admin tidak boleh menaikkan jabatan user menjadi diatas Staff!");
       return;
     }
 
-    // Panggil API Update (API Route tunggal)
     const res = await fetch(`/api/pengguna`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        id: parseInt(params.id), // ID dikirim di Body
+        id: parseInt(params.id),
         nama: form.nama,
         role: form.role,
-        password: form.password, // Password dikirim (kosong/isi)
+        password: form.password,
       }),
     });
 
@@ -89,30 +84,35 @@ export default function EditUserPage() {
     }
   };
 
-  if (loading) return <p className="p-8 text-white">Memuat data...</p>;
+  if (loading) return <p className="p-8 text-white text-center">Memuat data...</p>;
 
   return (
     <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
-      <div className="p-8 max-w-lg">
+      {/* 1. Responsif Padding & Max Width */}
+      <div className="p-4 md:p-8 w-full max-w-lg mx-auto">
+        
+        {/* Header Button */}
         <div className="flex items-center gap-4 mb-6">
           <Link
             href="/dashboard/pengguna"
-            className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white"
+            className="p-2 bg-gray-800 text-gray-400 rounded-lg hover:text-white transition hover:bg-gray-700"
           >
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Edit Pengguna</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-white">Edit Pengguna</h1>
         </div>
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+        {/* Card Form */}
+        <div className="bg-gray-800 p-5 md:p-8 rounded-xl border border-gray-700 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-5">
+            
             {/* NAMA */}
             <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <User size={14} /> Nama
+              <label className="text-gray-400 text-sm mb-1.5 flex items-center gap-2">
+                <User size={16} /> Nama Lengkap
               </label>
               <input
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition text-sm md:text-base"
                 value={form.nama}
                 onChange={(e) => setForm({ ...form, nama: e.target.value })}
                 required
@@ -121,24 +121,24 @@ export default function EditUserPage() {
 
             {/* EMAIL (Read Only) */}
             <div>
-              <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                <Mail size={14} /> Email
+              <label className="text-gray-400 text-sm mb-1.5 flex items-center gap-2">
+                <Mail size={16} /> Email Login
               </label>
               <input
-                className="w-full bg-gray-900/50 border border-gray-700 text-gray-500 p-3 rounded cursor-not-allowed"
+                className="w-full bg-gray-900/50 border border-gray-700 text-gray-500 p-3 rounded-lg cursor-not-allowed text-sm md:text-base"
                 value={form.email}
                 readOnly
               />
             </div>
 
-            {/* PASSWORD BARU (Fitur Tambahan) */}
-            <div className="bg-yellow-900/10 p-3 rounded-lg border border-yellow-900/30">
-              <label className="text-yellow-500 text-sm mb-1 font-bold flex items-center gap-2">
-                <Lock size={14} /> Ganti Password (Opsional)
+            {/* PASSWORD BARU */}
+            <div className="bg-yellow-900/10 p-4 rounded-lg border border-yellow-900/30">
+              <label className="text-yellow-500 text-sm mb-1.5 font-bold flex items-center gap-2">
+                <Lock size={16} /> Ganti Password (Opsional)
               </label>
               <input
                 type="password"
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:border-yellow-500 outline-none placeholder-gray-600"
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:border-yellow-500 outline-none placeholder-gray-600 transition text-sm md:text-base"
                 placeholder="Biarkan kosong jika tidak diganti"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -147,26 +147,26 @@ export default function EditUserPage() {
 
             {/* ROLE */}
             <div>
-              <label className="block text-gray-400 text-sm mb-1">
-                Jabatan / Role
+              <label className="text-gray-400 text-sm mb-1.5 flex items-center gap-2">
+                <Shield size={16} /> Jabatan / Role
               </label>
               <select
-                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm md:text-base"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
               >
                 <option value="STAFF">STAFF</option>
-                {/* Sembunyikan opsi Admin/Manajer jika yang login cuma Admin */}
                 {myRole !== "ADMIN" && <option value="ADMIN">ADMIN</option>}
-                {myRole === "PEMILIK" && (
+                {(myRole === "PEMILIK" || myRole === "MANAJER") && (
                   <option value="MANAJER">MANAJER</option>
                 )}
               </select>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mt-4 flex justify-center items-center gap-2 transition"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg mt-6 flex justify-center items-center gap-2 transition shadow-lg shadow-blue-900/20 active:scale-95 text-sm md:text-base"
             >
               <Save size={18} /> Simpan Perubahan
             </button>
