@@ -1,3 +1,5 @@
+// src/lib/auth.js
+
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -21,11 +23,15 @@ export const authOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user) throw new Error("Email tidak ditemukan");
+        // PERBAIKAN: Cek user DAN password dulu, baru lempar error umum
+        // Ini mencegah hacker menebak email mana yang valid
+        const passwordMatch = user 
+          ? await bcrypt.compare(credentials.password, user.password) 
+          : false;
 
-        const passwordMatch = await bcrypt.compare(credentials.password, user.password);
-
-        if (!passwordMatch) throw new Error("Password salah");
+        if (!user || !passwordMatch) {
+          throw new Error("Email atau password salah");
+        }
 
         return {
           id: user.id,

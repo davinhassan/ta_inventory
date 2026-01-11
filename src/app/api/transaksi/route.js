@@ -1,9 +1,12 @@
+// src/app/api/transaksi/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"; // Pastikan path import ini benar sesuai projectmu
+import { authOptions } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+// Import fungsi email yang baru dibuat
+import { kirimNotifikasiStok } from "@/lib/mail";
 
 // GET: Ambil Riwayat Transaksi
 export async function GET() {
@@ -24,7 +27,7 @@ export async function GET() {
   }
 }
 
-// POST: Buat Transaksi Kasir (WAJIB FOTO)
+// POST: Buat Transaksi Kasir + Upload Bukti + Cek Stok + Kirim Email
 export async function POST(request) {
   const session = await getServerSession(authOptions);
   
@@ -51,7 +54,6 @@ export async function POST(request) {
     if (!file || typeof file === "string" || file.size === 0) {
         return NextResponse.json({ error: "Bukti Struk/Foto Barang WAJIB diupload!" }, { status: 400 });
     }
-    // ------------------------------------
 
     // 3. Proses Upload File
     const bytes = await file.arrayBuffer();
@@ -64,7 +66,7 @@ export async function POST(request) {
     const filePath = path.join(uploadDir, filename);
     await writeFile(filePath, buffer);
 
-    // 4. Eksekusi Database (Transaction: Simpan Header, Detail, Update Stok, Catat Log)
+    // 4. Eksekusi Database (Transaction)
     const result = await prisma.$transaction(async (tx) => {
       
       // A. Simpan Header Transaksi
@@ -73,7 +75,7 @@ export async function POST(request) {
           userId: parseInt(session.user.id),
           total: total,
           status: "LUNAS",
-          buktiFoto: `/uploads/${filename}`, // Path file
+          buktiFoto: `/uploads/${filename}`, 
           detail: {
             create: items.map((item) => ({
               sukuCadangId: parseInt(item.id),
@@ -85,13 +87,15 @@ export async function POST(request) {
         },
       });
 
+      const barangUnderStock = []; // Penampung barang yang stoknya kritis
+
       // B. Update Stok & Catat Log Per Item
       for (const item of items) {
         const barangId = parseInt(item.id);
         const qty = parseInt(item.qty);
 
-        // Kurangi Stok di Tabel Master Barang
-        await tx.sukuCadang.update({
+        // Update Stok dan ambil data terbaru (Updated Record)
+        const updatedBarang = await tx.sukuCadang.update({
           where: { id: barangId },
           data: { stok: { decrement: qty } },
         });
@@ -107,12 +111,40 @@ export async function POST(request) {
             tanggal: new Date(),
           },
         });
+
+        // --- DETEKSI UNDER STOCK ---
+        // Jika sisa stok <= minStok, masukkan ke daftar peringatan
+        if (updatedBarang.stok <= updatedBarang.minStok) {
+            barangUnderStock.push(updatedBarang);
+        }
       }
 
-      return newTransaksi;
+      // Kembalikan objek yang berisi data transaksi dan daftar barang kritis
+      return { transaksi: newTransaksi, barangUnderStock };
     });
 
-    return NextResponse.json(result, { status: 201 });
+    // 5. PROSES NOTIFIKASI EMAIL (Di luar transaksi DB agar tidak memblokir response)
+    if (result.barangUnderStock.length > 0) {
+        
+        // Cari User dengan role Petinggi (ADMIN, MANAJER, PEMILIK)
+        const paraPetinggi = await prisma.pengguna.findMany({
+            where: {
+                role: { in: ['ADMIN', 'MANAJER', 'PEMILIK'] }
+            },
+            select: { email: true }
+        });
+
+        // Ambil emailnya saja -> ['bos@gmail.com', 'admin@gmail.com']
+        const emailTujuan = paraPetinggi.map(u => u.email);
+
+        if (emailTujuan.length > 0) {
+            // Jalankan fungsi kirim email (tanpa await agar client tidak menunggu)
+            kirimNotifikasiStok(result.barangUnderStock, emailTujuan)
+                .catch(err => console.error("Background Email Error:", err));
+        }
+    }
+
+    return NextResponse.json(result.transaksi, { status: 201 });
 
   } catch (error) {
     console.error("Error Transaksi:", error);

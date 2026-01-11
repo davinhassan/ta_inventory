@@ -1,12 +1,13 @@
-// 1. Konfigurasi Koneksi (Supabase Ready)
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 // --- USER ---
@@ -40,22 +41,24 @@ model Supplier {
 
 // --- BARANG ---
 model SukuCadang {
-  id              Int               @id @default(autoincrement())
-  kodeBarang      String            @unique
-  namaBarang      String
-  stok            Int
-  minStok         Int               @default(5)
-  maxStok         Int               @default(50)
-  hargaBeli       Float
-  hargaJual       Float             @default(0)
-  supplierId      Int?
-  supplier        Supplier?         @relation(fields: [supplierId], references: [id])
-  transaksiStok   TransaksiStok[]
-  detailPOs       DetailPO[]
-  detailJual      DetailTransaksi[]
+  id            Int               @id @default(autoincrement())
+  kodeBarang    String            @unique
+  namaBarang    String
+  stok          Int
+  minStok       Int               @default(5)
+  maxStok       Int               @default(50)
+
+  hargaBeli     Decimal           @db.Decimal(15, 2)
+  hargaJual     Decimal           @db.Decimal(15, 2) @default(0)
+  
+  supplierId    Int?
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+  transaksiStok TransaksiStok[]
+  detailPOs     DetailPO[]
+  detailJual    DetailTransaksi[]
 }
 
-// --- BARANG MASUK (PO) + BUKTI FOTO ---
+// --- BARANG MASUK (PO) ---
 enum StatusPO {
   PENDING
   SELESAI
@@ -67,10 +70,7 @@ model PurchaseOrder {
   noPO         String     @unique
   tanggalPesan DateTime   @default(now())
   status       StatusPO   @default(PENDING)
-  
-  // KOLOM BARU UNTUK GAMBAR FAKTUR
-  buktiFoto    String?    
-
+  buktiFoto    String?
   supplierId   Int
   supplier     Supplier   @relation(fields: [supplierId], references: [id])
   dibuatOlehId Int
@@ -87,18 +87,18 @@ model DetailPO {
   jumlah          Int
 }
 
-// --- BARANG KELUAR (TRANSAKSI) + BUKTI FOTO ---
+// --- BARANG KELUAR (TRANSAKSI) ---
 model Transaksi {
-  id        Int      @id @default(autoincrement())
-  total     Float
-  status    String   @default("LUNAS")
-  tanggal   DateTime @default(now())
+  id        Int               @id @default(autoincrement())
   
-  // Bukti Struk
-  buktiFoto String? 
+
+  total     Decimal           @db.Decimal(15, 2)
   
+  status    String            @default("LUNAS")
+  tanggal   DateTime          @default(now())
+  buktiFoto String?
   userId    Int
-  user      Pengguna @relation(fields: [userId], references: [id])
+  user      Pengguna          @relation(fields: [userId], references: [id])
   detail    DetailTransaksi[]
 }
 
@@ -109,8 +109,8 @@ model DetailTransaksi {
   sukuCadangId Int
   sukuCadang   SukuCadang @relation(fields: [sukuCadangId], references: [id])
   jumlah       Int
-  hargaSatuan  Float
-  subtotal     Float
+  hargaSatuan  Decimal    @db.Decimal(15, 2)
+  subtotal     Decimal    @db.Decimal(15, 2)
 }
 
 // --- RIWAYAT LOG OTOMATIS ---
