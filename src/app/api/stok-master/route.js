@@ -1,3 +1,4 @@
+// src/app/api/stok-master/route.js
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
@@ -18,6 +19,15 @@ export async function GET() {
         namaBarang: true,
         stok: true,
         hargaJual: true,
+        
+        // --- PERBAIKAN PENTING ---
+        // Tambahkan field ini agar frontend bisa memfilter berdasarkan supplier
+        supplierId: true, 
+        
+        // Opsional: Ambil nama supplier juga untuk tampilan debug/info
+        supplier: {
+            select: { namaSupplier: true }
+        }
       }
     });
 

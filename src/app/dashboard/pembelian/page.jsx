@@ -3,21 +3,41 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
 import { useSession } from "next-auth/react"; 
-import { Plus, CheckCircle, XCircle, Package, Clock, X, FileText } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Package, Clock, X, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function PembelianPage() {
-  const [poList, setPoList] = useState([]);
   const { data: session } = useSession(); 
+  
+  const [poList, setPoList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchPO = async () => {
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPage, setTotalPage] = useState(1);
+  const [totalData, setTotalData] = useState(0);
+
+  const fetchPO = async (halaman) => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/pembelian");
-      const data = await res.json();
-      setPoList(data);
-    } catch (e) { console.error(e); }
+      const res = await fetch(`/api/pembelian?page=${halaman}&limit=10`);
+      const responseData = await res.json();
+      
+      if (responseData.data && Array.isArray(responseData.data)) {
+         setPoList(responseData.data);
+         setTotalPage(responseData.pagination?.totalPage || 1);
+         setTotalData(responseData.pagination?.totalData || 0);
+      } else {
+         setPoList([]);
+      }
+    } catch (e) { 
+        console.error(e); 
+        setPoList([]);
+    } finally {
+        setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchPO(); }, []);
+  useEffect(() => { fetchPO(page); }, [page]);
 
   const handleProcess = async (id, statusKeputusan) => {
     const pesan = statusKeputusan === "SELESAI" 
@@ -35,7 +55,7 @@ export default function PembelianPage() {
         
         if(res.ok) { 
             alert(statusKeputusan === "SELESAI" ? "Berhasil disetujui!" : "PO Ditolak.");
-            fetchPO(); 
+            fetchPO(page); 
         } else {
             alert("Gagal memproses data.");
         }
@@ -46,23 +66,29 @@ export default function PembelianPage() {
 
   return (
     <AuthGuard allowedRoles={["MANAJER", "ADMIN", "STAFF", "PEMILIK"]}>
-      {/* 1. Responsif Padding */}
-      <div className="p-4 md:p-8">
+      <div className="p-4 md:p-8 pb-24 md:pb-8">
         
-        {/* 2. Header Responsif (Stack di HP) */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <h1 className="text-xl md:text-2xl font-bold text-white flex gap-2 items-center">
-            <Package className="text-blue-400"/> Data Barang Masuk (PO)
-          </h1>
-          <Link href="/dashboard/pembelian/tambah">
-            <button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 shadow-lg transition text-sm md:text-base">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-white flex gap-2 items-center">
+                <Package className="text-blue-400"/> Data Barang Masuk (PO)
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">Total {totalData} request ditemukan.</p>
+          </div>
+          
+          <Link href="/dashboard/pembelian/tambah" className="w-full md:w-auto">
+            <button className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg flex justify-center items-center gap-2 shadow-lg transition text-sm md:text-base">
               <Plus size={18}/> Buat Request PO
             </button>
           </Link>
         </div>
         
+        {loading ? (
+             <div className="text-center py-20 bg-gray-800/50 rounded-xl border border-gray-700 animate-pulse">
+                <span className="text-gray-400">Memuat data PO...</span>
+             </div>
+        ) : (
         <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-xl overflow-hidden">
-          {/* 3. Wrapper Table Scrollable */}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-gray-300 whitespace-nowrap text-sm md:text-base">
               <thead className="bg-gray-900 text-xs uppercase text-gray-400 border-b border-gray-700">
@@ -76,43 +102,39 @@ export default function PembelianPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {poList.map((po) => (
+                {poList.length === 0 ? (
+                    <tr><td colSpan="6" className="p-8 text-center text-gray-500">Belum ada data.</td></tr>
+                ) : poList.map((po) => (
                   <tr key={po.id} className="hover:bg-gray-700/50 transition">
                     <td className="px-4 py-3 md:px-6 md:py-4 font-mono font-bold text-white">{po.noPO}</td>
                     <td className="px-4 py-3 md:px-6 md:py-4">{po.supplier?.namaSupplier}</td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-sm">
-                      {po.items.map((i, idx) => (
-                          <div key={idx}>{i.sukuCadang?.namaBarang} (x{i.jumlah})</div>
-                      ))}
+                      <ul className="list-disc list-inside">
+                        {po.items.map((i, idx) => (
+                            <li key={idx}>{i.sukuCadang?.namaBarang} <span className="text-gray-500">(x{i.jumlah})</span></li>
+                        ))}
+                      </ul>
                     </td>
                     
-                    {/* --- ISI KOLOM BUKTI --- */}
                     <td className="px-4 py-3 md:px-6 md:py-4 text-center">
                       {po.buktiFoto ? (
                           <a 
                               href={po.buktiFoto} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 underline text-xs font-bold"
+                              className="inline-flex items-center gap-1 bg-blue-900/20 px-2 py-1 rounded text-blue-400 hover:text-blue-300 hover:underline text-xs"
                           >
-                              <FileText size={16} /> Lihat
+                              <FileText size={14} /> Lihat
                           </a>
-                      ) : (
-                          <span className="text-gray-600 text-xs italic">-</span>
-                      )}
+                      ) : <span className="text-gray-600 text-xs">-</span>}
                     </td>
 
                     <td className="px-4 py-3 md:px-6 md:py-4">
-                      {po.status === 'SELESAI' && (
-                          <span className="text-green-400 font-bold flex items-center gap-1 text-xs md:text-sm"><CheckCircle size={14}/> Selesai</span>
-                      )}
-                      {po.status === 'PENDING' && (
-                          <span className="text-yellow-400 font-bold flex items-center gap-1 text-xs md:text-sm"><Clock size={14}/> Pending</span>
-                      )}
-                      {po.status === 'DITOLAK' && (
-                          <span className="text-red-400 font-bold flex items-center gap-1 text-xs md:text-sm"><XCircle size={14}/> Ditolak</span>
-                      )}
+                      {po.status === 'SELESAI' && <span className="text-green-400 font-bold flex items-center gap-1 text-xs md:text-sm"><CheckCircle size={14}/> Selesai</span>}
+                      {po.status === 'PENDING' && <span className="text-yellow-400 font-bold flex items-center gap-1 text-xs md:text-sm"><Clock size={14}/> Pending</span>}
+                      {po.status === 'DITOLAK' && <span className="text-red-400 font-bold flex items-center gap-1 text-xs md:text-sm"><XCircle size={14}/> Ditolak</span>}
                     </td>
+                    
                     <td className="px-4 py-3 md:px-6 md:py-4 text-right">
                       {po.status === "PENDING" && canApprove ? (
                         <div className="flex gap-2 justify-end">
@@ -131,7 +153,7 @@ export default function PembelianPage() {
                         </div>
                       ) : (
                           <span className="text-xs text-gray-500 italic">
-                              {po.status === "PENDING" ? "Menunggu Approval" : "-"}
+                              {po.status === "PENDING" ? "Menunggu Approval" : "Selesai"}
                           </span>
                       )}
                     </td>
@@ -140,11 +162,30 @@ export default function PembelianPage() {
               </tbody>
             </table>
           </div>
-          
-          {poList.length === 0 && (
-             <div className="p-8 text-center text-gray-500">Belum ada data request barang.</div>
-          )}
         </div>
+        )}
+
+        {/* CONTROLS PAGINATION */}
+        {totalPage > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+                <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:opacity-50 hover:bg-gray-700 transition text-sm"
+                >
+                    <ChevronLeft size={16} /> Prev
+                </button>
+                <span className="text-gray-400 text-sm">Halaman <span className="text-white font-bold">{page}</span> dari {totalPage}</span>
+                <button
+                    onClick={() => setPage(p => Math.min(totalPage, p + 1))}
+                    disabled={page === totalPage}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:opacity-50 hover:bg-gray-700 transition text-sm"
+                >
+                    Next <ChevronRight size={16} />
+                </button>
+            </div>
+        )}
+
       </div>
     </AuthGuard>
   );

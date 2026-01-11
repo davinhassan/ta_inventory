@@ -1,100 +1,136 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"; // Pastikan path import ini benar sesuai projectmu
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { authOptions } from "@/lib/auth";
+import { createClient } from "@supabase/supabase-js";
 
-// GET: Ambil Daftar PO
-export async function GET() {
-  try {
-    const po = await prisma.purchaseOrder.findMany({
-      include: { 
-        supplier: true, 
-        items: { include: { sukuCadang: true } },
-        dibuatOleh: { select: { nama: true } }
-      },
-      orderBy: { tanggalPesan: "desc" },
+// --- KONFIGURASI SUPABASE ---
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } }
+);
+
+const BUCKET_NAME = "inventory-images";
+
+// Helper: Upload ke Supabase
+async function uploadToSupabase(file, filename) {
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  // Upload ke folder 'po'
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(`po/${filename}`, buffer, {
+      contentType: file.type,
+      upsert: false,
     });
-    return NextResponse.json(po);
+
+  if (error) throw new Error("Gagal upload ke Supabase: " + error.message);
+
+  // Ambil URL Publik
+  const { data } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(`po/${filename}`);
+
+  return data.publicUrl;
+}
+
+// Helper: Hapus gambar jika database gagal (Rollback)
+async function deleteFromSupabase(filename) {
+  await supabase.storage.from(BUCKET_NAME).remove([`po/${filename}`]);
+}
+
+// --- GET: Ambil Daftar PO dengan Pagination ---
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "10");
+  const skip = (page - 1) * limit;
+
+  try {
+    const [po, totalData] = await prisma.$transaction([
+      prisma.purchaseOrder.findMany({
+        skip: skip,
+        take: limit,
+        include: { 
+          supplier: true, 
+          items: { include: { sukuCadang: true } },
+          dibuatOleh: { select: { nama: true } }
+        },
+        orderBy: { tanggalPesan: "desc" },
+      }),
+      prisma.purchaseOrder.count()
+    ]);
+
+    const totalPage = Math.ceil(totalData / limit);
+
+    return NextResponse.json({
+        data: po,
+        pagination: { totalData, totalPage, currentPage: page, limit }
+    });
   } catch (error) {
+    console.error("Error GET PO:", error);
     return NextResponse.json({ error: "Gagal ambil data PO" }, { status: 500 });
   }
 }
 
-// POST: Buat PO Baru (WAJIB FOTO)
+// --- POST: Buat PO Baru + Upload Supabase ---
 export async function POST(request) {
   const session = await getServerSession(authOptions);
   
-  // 1. Cek Session
-  if (!session || !session.user || !session.user.id) {
-    return NextResponse.json({ error: "Unauthorized: Silakan Login Ulang." }, { status: 401 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  let uploadedFilename = null;
 
   try {
     const formData = await request.formData();
-    
-    // Ambil Data Form
     const supplierId = parseInt(formData.get("supplierId"));
     const itemsRaw = formData.get("items");
     const items = JSON.parse(itemsRaw || "[]");
     const file = formData.get("buktiFoto");
 
-    // 2. Validasi Input Data
-    if (!supplierId || isNaN(supplierId)) {
-        return NextResponse.json({ error: "Supplier wajib dipilih!" }, { status: 400 });
-    }
-    if (!items || items.length === 0) {
-        return NextResponse.json({ error: "Barang tidak boleh kosong!" }, { status: 400 });
-    }
+    // Validasi
+    if (!supplierId || isNaN(supplierId)) return NextResponse.json({ error: "Supplier wajib dipilih!" }, { status: 400 });
+    if (!items || items.length === 0) return NextResponse.json({ error: "Barang tidak boleh kosong!" }, { status: 400 });
+    if (!file || typeof file === "string" || file.size === 0) return NextResponse.json({ error: "Bukti Faktur WAJIB diupload!" }, { status: 400 });
 
-    // --- 3. VALIDASI WAJIB FILE FAKTUR/INVOICE ---
-    if (!file || typeof file === "string" || file.size === 0) {
-        return NextResponse.json({ error: "Bukti Faktur/Invoice WAJIB diupload!" }, { status: 400 });
-    }
-    // ----------------------------------------------
-
-    // 4. Proses Upload File
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    // Buat nama file unik: PO_Timestamp_NamaFileAsli
-    const filename = `PO_${Date.now()}_` + file.name.replaceAll(" ", "_");
+    // 1. Upload ke Supabase
+    const cleanFileName = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_.-]/g, "");
+    uploadedFilename = `PO_${Date.now()}_${cleanFileName}`;
     
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    await mkdir(uploadDir, { recursive: true }); 
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
+    const imageUrl = await uploadToSupabase(file, uploadedFilename);
 
-    // 5. Simpan ke Database
-    const noPO = `PO-${Date.now()}`; 
-    
-    const newPO = await prisma.purchaseOrder.create({
-      data: {
-        noPO: noPO,
-        status: "PENDING",
-        buktiFoto: `/uploads/${filename}`, // Path file yang baru diupload
+    // 2. Simpan ke Database
+    const newPO = await prisma.$transaction(async (tx) => {
+        const noPO = `PO-${Date.now()}`; 
         
-        supplier: {
-            connect: { id: supplierId } 
-        },
-        dibuatOleh: {
-            connect: { id: parseInt(session.user.id) }
-        },
-        items: {
-          create: items.map((item) => ({
-            jumlah: parseInt(item.qty),
-            sukuCadang: {
-                connect: { id: parseInt(item.id) }
-            }
-          })),
-        },
-      },
+        return await tx.purchaseOrder.create({
+          data: {
+            noPO: noPO,
+            status: "PENDING",
+            buktiFoto: imageUrl,
+            supplierId: supplierId,
+            dibuatOlehId: parseInt(session.user.id),
+            items: {
+              create: items.map((item) => ({
+                jumlah: parseInt(item.qty),
+                sukuCadangId: parseInt(item.id)
+              })),
+            },
+          },
+        });
     });
 
     return NextResponse.json(newPO, { status: 201 });
 
   } catch (error) {
     console.error("Gagal buat PO:", error);
+    // Rollback: Hapus gambar jika DB gagal
+    if (uploadedFilename) await deleteFromSupabase(uploadedFilename).catch(console.error);
+    
     return NextResponse.json({ error: "Error Server: " + error.message }, { status: 500 });
   }
 }
