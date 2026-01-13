@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 export default function TransaksiChart({ dataTransaksi }) {
+  // Logic pengolahan data (Tidak berubah)
   const processedData = dataTransaksi.reduce((acc, curr) => {
     const date = new Date(curr.tanggal).toLocaleDateString("id-ID", {
       day: "2-digit",
@@ -36,15 +37,12 @@ export default function TransaksiChart({ dataTransaksi }) {
   const chartData = processedData.reverse();
 
   return (
-    <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-      <h3 className="text-lg font-bold text-white mb-4">
+    // UBAH 1: Container menggunakan bg-card dan border-border
+    <div className="bg-card p-4 rounded-xl border border-border shadow-sm">
+      <h3 className="text-lg font-bold text-foreground mb-4">
         Grafik Pergerakan Stok
       </h3>
-      
-      {/* WRAPPER RESPONSIF KHUSUS:
-         1. overflow-x-auto: Agar bisa discroll ke samping di HP
-         2. min-w-[600px]: Memaksa chart minimal lebar 600px agar tidak gepeng
-      */}
+
       <div className="w-full overflow-x-auto custom-scrollbar pb-2">
         <div className="h-[300px] min-w-[600px] w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -57,42 +55,55 @@ export default function TransaksiChart({ dataTransaksi }) {
                 bottom: 5,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-              <XAxis 
-                dataKey="name" 
-                stroke="#9CA3AF" 
-                fontSize={12} 
+              {/* UBAH 2: Gunakan CSS Variable untuk warna garis */}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border)" // Garis grid mengikuti warna border tema
+                vertical={false}
+              />
+
+              <XAxis
+                dataKey="name"
+                stroke="var(--muted-foreground)" // Teks sumbu X mengikuti warna muted
+                fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis 
-                stroke="#9CA3AF" 
-                fontSize={12} 
+
+              <YAxis
+                stroke="var(--muted-foreground)" // Teks sumbu Y mengikuti warna muted
+                fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
+
+              {/* UBAH 3: Tooltip Pop-up yang Dinamis */}
               <Tooltip
-                cursor={{ fill: '#374151', opacity: 0.4 }}
+                cursor={{ fill: "var(--muted)", opacity: 0.3 }} // Highlight bar saat di-hover
                 contentStyle={{
-                  backgroundColor: "#1F2937",
-                  borderColor: "#374151",
-                  color: "#fff",
+                  backgroundColor: "var(--card)", // Background Tooltip
+                  borderColor: "var(--border)", // Border Tooltip
+                  color: "var(--card-foreground)", // Teks Tooltip
                   borderRadius: "8px",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                 }}
-                itemStyle={{ color: "#fff" }}
+                itemStyle={{ color: "var(--card-foreground)" }}
               />
+
               <Legend wrapperStyle={{ paddingTop: "10px" }} />
+
+              {/* Bar tetap menggunakan warna pasti (Hijau/Merah) karena ini indikator universal */}
               <Bar
                 dataKey="masuk"
                 name="Barang Masuk"
-                fill="#10B981"
+                fill="#10B981" // Emerald-500
                 radius={[4, 4, 0, 0]}
-                barSize={30} // Ukuran bar tetap proporsional
+                barSize={30}
               />
               <Bar
                 dataKey="keluar"
                 name="Barang Keluar"
-                fill="#EF4444"
+                fill="#EF4444" // Red-500
                 radius={[4, 4, 0, 0]}
                 barSize={30}
               />

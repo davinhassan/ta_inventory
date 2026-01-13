@@ -1,6 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// 1. Import Providers yang sudah dibuat
 import Providers from "@/components/Providers";
 
 const geistSans = Geist({
@@ -15,16 +14,16 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Bengkel App",
-  description: "Sistem Manajemen Stok & Pengguna Bengkel",
+  description: "Sistem Manajemen Stok",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* 2. Bungkus {children} dengan Providers agar Session bisa dibaca di seluruh aplikasi */}
+        {/* HAPUS SEMUA class bg-gray-900 atau text-white disini */}
         <Providers>{children}</Providers>
       </body>
     </html>

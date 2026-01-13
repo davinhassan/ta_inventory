@@ -8,45 +8,41 @@ export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gray-950 text-white font-sans overflow-hidden">
-      
-      {/* Pastikan komponen Sidebar Anda memiliki logic CSS:
-         - Mobile: fixed z-50 h-full (agar menumpuk di atas konten)
-         - Desktop: fixed w-64 h-full
-      */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-      />
+    // UBAH 1: Hapus 'bg-gray-950 text-white'. Ganti dengan 'bg-background text-foreground'
+    <div className="flex min-h-screen bg-background text-foreground font-sans overflow-hidden transition-colors duration-300">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* OVERLAY GELAP SAAT SIDEBAR BUKA DI MOBILE */}
-      {/* Tambahkan ini agar user bisa klik di luar sidebar untuk menutupnya */}
+      {/* OVERLAY MOBILE */}
+      {/* Catatan: Pastikan di dalam Sidebar.jsx tidak ada overlay ganda. 
+          Jika di Sidebar sudah ada overlay, bagian ini bisa dihapus. 
+          Jika belum, biarkan saja. */}
       {isSidebarOpen && (
-        <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setSidebarOpen(false)}
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* KONTEN UTAMA */}
-      {/* PERBAIKAN: Tambahkan 'min-w-0' agar tabel di dalam children tidak merusak layout flex */}
       <main className="flex-1 flex flex-col md:ml-64 transition-all duration-300 min-w-0 h-screen overflow-y-auto">
-        
         {/* HEADER MOBILE */}
-        <div className="md:hidden sticky top-0 z-30 bg-gray-900/90 backdrop-blur-md border-b border-gray-800 p-4 flex items-center justify-between shadow-md">
-          <div className="font-bold text-blue-500 text-lg">Bengkel XYZ</div>
-          <button 
+        {/* UBAH 2: Ganti warna background dan border agar support Light Mode */}
+        <div className="md:hidden sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border p-4 flex items-center justify-between shadow-sm">
+          {/* Logo Text */}
+          <div className="font-bold text-primary text-lg">Bengkel XYZ</div>
+
+          {/* Tombol Menu */}
+          {/* UBAH 3: Update styling tombol agar tidak hardcoded gray-800 */}
+          <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 text-gray-300 hover:text-white bg-gray-800 rounded-lg border border-gray-700 active:scale-95 transition"
+            className="p-2 text-muted-foreground hover:text-foreground bg-card hover:bg-secondary rounded-lg border border-border active:scale-95 transition-all"
           >
             <Menu size={24} />
           </button>
         </div>
 
         {/* AREA KONTEN PAGE */}
-        <div className="flex-1 w-full p-0">
-            {children}
-        </div>
+        <div className="flex-1 w-full p-0">{children}</div>
       </main>
     </div>
   );

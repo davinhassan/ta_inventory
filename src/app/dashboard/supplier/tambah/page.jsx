@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
-import { ArrowLeft, Save, Truck, Phone, MapPin } from "lucide-react"; // Menambahkan ikon input biar cantik
+import { ArrowLeft, Save, Truck, Phone, MapPin } from "lucide-react";
 
 export default function TambahSupplierPage() {
   const router = useRouter();
@@ -51,31 +51,29 @@ export default function TambahSupplierPage() {
     <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
       {/* 1. Wrapper Utama: Padding responsif (kecil di HP, lega di Desktop) */}
       <div className="p-4 md:p-8 w-full min-h-screen">
-        
         {/* 2. Container Tengah: max-w-lg agar konsisten dengan halaman Edit */}
         <div className="max-w-lg mx-auto">
-          
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <Link
               href="/dashboard/supplier"
-              className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white transition hover:bg-gray-700"
+              className="p-2 bg-card border border-border text-muted-foreground rounded hover:text-foreground transition hover:bg-secondary"
             >
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-xl md:text-2xl font-bold text-white">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">
               Tambah Supplier
             </h1>
           </div>
 
           {/* Form Container */}
-          <div className="bg-gray-800 p-4 sm:p-6 rounded-xl border border-gray-700 shadow-lg">
+          <div className="bg-card p-4 sm:p-6 rounded-xl border border-border shadow-lg">
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              
               {/* Input Nama */}
               <div>
-                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                  <Truck size={14} /> Nama Supplier <span className="text-red-500">*</span>
+                <label className="text-muted-foreground text-sm mb-1 flex items-center gap-2">
+                  <Truck size={14} /> Nama Supplier{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -83,15 +81,16 @@ export default function TambahSupplierPage() {
                   value={form.namaSupplier}
                   onChange={handleChange}
                   placeholder="Contoh: PT. Sparepart Jaya"
-                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder-gray-600 transition"
+                  className="w-full bg-background border border-input text-foreground p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder:text-muted-foreground transition"
                   required
                 />
               </div>
 
               {/* Input Telepon */}
               <div>
-                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                  <Phone size={14} /> Nomor Telepon <span className="text-red-500">*</span>
+                <label className="text-muted-foreground text-sm mb-1 flex items-center gap-2">
+                  <Phone size={14} /> Nomor Telepon{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -99,15 +98,16 @@ export default function TambahSupplierPage() {
                   value={form.telepon}
                   onChange={handleChange}
                   placeholder="Contoh: 08123456789"
-                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder-gray-600 transition"
+                  className="w-full bg-background border border-input text-foreground p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder:text-muted-foreground transition"
                   required
                 />
               </div>
 
               {/* Input Alamat */}
               <div>
-                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
-                  <MapPin size={14} /> Alamat Lengkap <span className="text-red-500">*</span>
+                <label className="text-muted-foreground text-sm mb-1 flex items-center gap-2">
+                  <MapPin size={14} /> Alamat Lengkap{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   name="alamat"
@@ -115,7 +115,7 @@ export default function TambahSupplierPage() {
                   value={form.alamat}
                   onChange={handleChange}
                   placeholder="Masukkan alamat lengkap..."
-                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm sm:text-base placeholder-gray-600 transition"
+                  className="w-full bg-background border border-input text-foreground p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm sm:text-base placeholder:text-muted-foreground transition"
                   required
                 />
               </div>

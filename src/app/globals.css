@@ -1,26 +1,47 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --- MODE TERANG (Option A) --- */
+  /* Background utama abu-abu terang agar mata nyaman & kartu putih terlihat */
+  --background: #f3f4f6;
+  --foreground: #111827; /* Hampir hitam */
+
+  /* Warna khusus Sidebar & Kartu (Putih bersih) */
+  --card: #ffffff;
+  --card-foreground: #111827;
+
+  --border: #e5e7eb; /* Abu-abu tipis untuk garis */
+}
+
+.dark {
+  /* --- MODE GELAP (Option B) --- */
+  /* Background utama biru gelap/navy */
+  --background: #0f172a;
+  --foreground: #f8fafc; /* Putih terang */
+
+  /* Warna Sidebar & Kartu (Sedikit lebih terang dari background) */
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+
+  --border: #334155; /* Garis gelap */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
 }

@@ -86,43 +86,39 @@ export default function EditSupplierPage({ params }) {
 
   if (isLoading)
     return (
-      <div className="flex items-center justify-center min-h-[50vh] text-white">
+      <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground">
         <span className="animate-pulse">Sedang memuat data...</span>
       </div>
     );
 
   return (
     <AuthGuard allowedRoles={["PEMILIK", "MANAJER", "ADMIN"]}>
-      {/* RESPONSIVE UPDATE:
-        1. p-4: Padding kecil untuk mobile.
-        2. md:p-8: Padding besar untuk tablet ke atas.
-        3. min-h-screen: Agar background selalu penuh.
-      */}
+      {/* RESPONSIVE UPDATE */}
       <div className="p-4 md:p-8 w-full min-h-screen">
         
-        {/* Container Form: max-w-lg agar tidak terlalu lebar di monitor besar, mx-auto biar di tengah */}
+        {/* Container Form */}
         <div className="max-w-lg mx-auto">
           
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <Link
               href="/dashboard/supplier"
-              className="p-2 bg-gray-800 text-gray-400 rounded hover:text-white transition hover:bg-gray-700"
+              className="p-2 bg-card border border-border text-muted-foreground rounded hover:text-foreground transition hover:bg-secondary"
             >
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-xl md:text-2xl font-bold text-white">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">
               Edit Supplier
             </h1>
           </div>
 
           {/* Form Container */}
-          <div className="bg-gray-800 p-4 sm:p-6 rounded-xl border border-gray-700 shadow-lg">
+          <div className="bg-card p-4 sm:p-6 rounded-xl border border-border shadow-lg">
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               
               {/* Nama Supplier */}
               <div>
-                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <label className="text-muted-foreground text-sm mb-1 flex items-center gap-2">
                   <Truck size={14} /> Nama Supplier
                 </label>
                 <input
@@ -131,14 +127,14 @@ export default function EditSupplierPage({ params }) {
                   value={formData.namaSupplier}
                   onChange={handleChange}
                   placeholder="Contoh: PT. Maju Jaya"
-                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder-gray-600"
+                  className="w-full bg-background border border-input text-foreground p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder:text-muted-foreground"
                   required
                 />
               </div>
 
               {/* Telepon */}
               <div>
-                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <label className="text-muted-foreground text-sm mb-1 flex items-center gap-2">
                   <Phone size={14} /> Telepon
                 </label>
                 <input
@@ -147,14 +143,14 @@ export default function EditSupplierPage({ params }) {
                   value={formData.telepon}
                   onChange={handleChange}
                   placeholder="0812..."
-                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder-gray-600"
+                  className="w-full bg-background border border-input text-foreground p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm sm:text-base placeholder:text-muted-foreground"
                   required
                 />
               </div>
 
               {/* Alamat */}
               <div>
-                <label className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                <label className="text-muted-foreground text-sm mb-1 flex items-center gap-2">
                   <MapPin size={14} /> Alamat Lengkap
                 </label>
                 <textarea
@@ -163,7 +159,7 @@ export default function EditSupplierPage({ params }) {
                   value={formData.alamat}
                   onChange={handleChange}
                   placeholder="Jalan..."
-                  className="w-full bg-gray-900 border border-gray-600 text-white p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm sm:text-base placeholder-gray-600"
+                  className="w-full bg-background border border-input text-foreground p-3 rounded focus:ring-2 focus:ring-blue-500 outline-none resize-none text-sm sm:text-base placeholder:text-muted-foreground"
                   required
                 />
               </div>
